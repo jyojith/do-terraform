@@ -73,16 +73,16 @@ resource "digitalocean_kubernetes_cluster" "starthack" {
 }
 
 provider "kubernetes" {
-  host  = digitalocean_kubernetes_cluster.starthack.endpoint
-  token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
+  host                   = digitalocean_kubernetes_cluster.starthack.endpoint
+  token                  = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
   cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate)
 }
 
 provider "kubectl" {
-  host  = digitalocean_kubernetes_cluster.starthack.endpoint
-  token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
+  host                   = digitalocean_kubernetes_cluster.starthack.endpoint
+  token                  = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
   cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate)
-  load_config_file = false
+  load_config_file       = false
 }
 
 resource "digitalocean_domain" "jyojith_site" {
@@ -98,10 +98,10 @@ resource "digitalocean_record" "ingress" {
 }
 
 resource "helm_release" "nginx_ingress" {
-  name       = "nginx-ingress"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  namespace  = "ingress-nginx"
+  name             = "nginx-ingress"
+  repository       = "https://kubernetes.github.io/ingress-nginx"
+  chart            = "ingress-nginx"
+  namespace        = "ingress-nginx"
   create_namespace = true
 
   set {
@@ -117,18 +117,18 @@ resource "kubernetes_secret" "argocd_admin_password" {
   }
 
   data = {
-    admin.password       = var.argocd_admin_password
-    admin.passwordMtime  = timestamp()
+    admin.password      = var.argocd_admin_password
+    admin.passwordMtime = timestamp()
   }
 
   type = "Opaque"
 }
 
 resource "helm_release" "argocd" {
-  name       = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  namespace  = "argocd"
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argocd"
   create_namespace = true
 
   set_sensitive {
@@ -143,7 +143,7 @@ resource "kubernetes_ingress_v1" "app_ingress" {
     namespace = "default"
     annotations = {
       "nginx.ingress.kubernetes.io/rewrite-target" = "/"
-      "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
+      "cert-manager.io/cluster-issuer"             = "letsencrypt-prod"
     }
   }
 
