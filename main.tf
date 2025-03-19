@@ -24,18 +24,18 @@ terraform {
   }
 }
 
-resource "start_hack_project" "k8s_starthack" {
+resource "digitalocean_project" "k8s_challenge" {
   name        = "k8s-challenge"
   description = "Start hack 2025 cluster"
   purpose     = "Just trying out DigitalOcean"
   environment = "Development"
 
   resources = [
-    start_hack_cluster.starthack.urn
+    digitalocean_kubernetes_cluster.starthack.urn
   ]
 }
 
-resource "start_hack_vpc" "k8s" {
+resource "digitalocean_vpc" "k8s" {
   name   = "k8s-vpc"
   region = "fra1"
 
@@ -44,17 +44,17 @@ resource "start_hack_vpc" "k8s" {
   }
 }
 
-data "start_hack_versions" "prefix" {
+data "digitalocean_kubernetes_versions" "prefix" {
   version_prefix = "1.29."
 }
 
-resource "start_hack_cluster" "starthack" {
+resource "digitalocean_kubernetes_cluster" "starthack" {
   name         = "starthack"
   region       = "fra1"
   auto_upgrade = true
-  version      = data.start_hack_versions.prefix.latest_version
+  version      = data.digitalocean_kubernetes_versions.prefix.latest_version
 
-  vpc_uuid = start_hack_vpc.k8s.id
+  vpc_uuid = digitalocean_vpc.k8s.id
 
   maintenance_policy {
     start_time = "04:00"
@@ -69,18 +69,18 @@ resource "start_hack_cluster" "starthack" {
 }
 
 provider "kubernetes" {
-  host  = start_hack_cluster.starthack.endpoint
-  token = start_hack_cluster.starthack.kube_config[0].token
+  host  = digitalocean_kubernetes_cluster.starthack.endpoint
+  token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
   cluster_ca_certificate = base64decode(
-    start_hack_cluster.starthack.kube_config[0].cluster_ca_certificate
+    digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate
   )
 }
 
 provider "kubectl" {
-  host  = start_hack_cluster.starthack.endpoint
-  token = start_hack_cluster.starthack.kube_config[0].token
+  host  = digitalocean_kubernetes_cluster.starthack.endpoint
+  token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
   cluster_ca_certificate = base64decode(
-    start_hack_cluster.starthack.kube_config[0].cluster_ca_certificate
+    digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate
   )
   load_config_file = false
 }
