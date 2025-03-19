@@ -85,3 +85,38 @@ provider "kubectl" {
 resource "digitalocean_domain" "jyojith_site" {
   name = "jyojith.site"
 }
+
+resource "digitalocean_record" "ingress" {
+  domain = digitalocean_domain.jyojith_site.name
+  type   = "A"
+  name   = "*.jyojith.site"
+  value  = digitalocean_kubernetes_cluster.starthack.endpoint
+  ttl    = 300
+}
+
+resource "helm_release" "nginx_ingress" {
+  name             = "nginx-ingress"
+  repository       = "https://kubernetes.github.io/ingress-nginx"
+  chart            = "ingress-nginx"
+  namespace        = "ingress-nginx"
+  create_namespace = true
+
+  set {
+    name  = "controller.service.type"
+    value = "LoadBalancer"
+  }
+}
+
+
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argocd"
+  create_namespace = true
+
+  set_sensitive {
+    name  = "configs.secret.argocdServerAdminPassword"
+    value = "testing123"
+  }
+}
