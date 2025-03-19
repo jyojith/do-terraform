@@ -120,6 +120,12 @@ resource "kubernetes_secret" "argocd_admin_password" {
   type = "Opaque"
 }
 
+variable "argocd_admin_password" {
+  description = "ArgoCD Admin Password"
+  type        = string
+  sensitive   = true
+}
+
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -133,7 +139,7 @@ resource "helm_release" "argocd" {
   }
 }
 
-resource "kubernetes_ingress_v1" "app_ingress" {
+resource "kubernetes_ingress" "app_ingress" {
   metadata {
     name      = "app-ingress"
     namespace = "default"
