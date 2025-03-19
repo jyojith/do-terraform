@@ -194,9 +194,9 @@ resource "kubernetes_ingress_v1" "app_ingress" {
 }
 
 variable "do_token" {
-  default = env.DIGITALOCEAN_TOKEN
+  default = "dsfdf"
 }
 
 variable "argocd_admin_password" {
-  default = env.ARGOCD_ADMIN_PASS
+  default = "testing123"
 }
