@@ -126,6 +126,10 @@ variable "argocd_admin_password" {
   sensitive   = true
 }
 
+locals {
+  argocd_admin_password = env.ARGOCD_ADMIN_PASS
+}
+
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
