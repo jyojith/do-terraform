@@ -45,7 +45,7 @@ resource "digitalocean_vpc" "k8s" {
 }
 
 data "digitalocean_kubernetes_versions" "prefix" {
-  version_prefix = "1.29."
+  version_prefix = "1.32."
 }
 
 resource "digitalocean_kubernetes_cluster" "starthack" {
