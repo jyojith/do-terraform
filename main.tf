@@ -75,17 +75,13 @@ resource "digitalocean_kubernetes_cluster" "starthack" {
 provider "kubernetes" {
   host  = digitalocean_kubernetes_cluster.starthack.endpoint
   token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
-  cluster_ca_certificate = base64decode(
-    digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate
-  )
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate)
 }
 
 provider "kubectl" {
   host  = digitalocean_kubernetes_cluster.starthack.endpoint
   token = digitalocean_kubernetes_cluster.starthack.kube_config[0].token
-  cluster_ca_certificate = base64decode(
-    digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate
-  )
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.starthack.kube_config[0].cluster_ca_certificate)
   load_config_file = false
 }
 
@@ -121,8 +117,8 @@ resource "kubernetes_secret" "argocd_admin_password" {
   }
 
   data = {
-    admin.password  = var.argocd_admin_password
-    admin.passwordMtime = timestamp()
+    admin.password       = var.argocd_admin_password
+    admin.passwordMtime  = timestamp()
   }
 
   type = "Opaque"
