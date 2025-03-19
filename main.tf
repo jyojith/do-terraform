@@ -121,7 +121,7 @@ resource "helm_release" "argocd" {
   }
 }
 
-resource "kubernetes_ingress" "app_ingress" {
+resource "kubernetes_ingress_v1" "app_ingress" {
   metadata {
     name      = "app-ingress"
     namespace = "default"
