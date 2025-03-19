@@ -99,7 +99,7 @@ resource "helm_release" "nginx_ingress" {
     value = "LoadBalancer"
   }
 
-  depends_on = [digitalocean_kubernetes_cluster.starthack]
+  depends_on = [null_resource.wait_for_k8s]
 }
 
 resource "helm_release" "argocd" {
@@ -134,4 +134,19 @@ resource "digitalocean_record" "ingress" {
   ttl    = 300
 
   depends_on = [helm_release.nginx_ingress]
+}
+
+resource "null_resource" "wait_for_k8s" {
+  depends_on = [digitalocean_kubernetes_cluster.starthack]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "Waiting for Kubernetes API to become available..."
+      for i in {1..30}; do
+        kubectl get nodes && break
+        echo "Retrying in 10 seconds..."
+        sleep 10
+      done
+    EOT
+  }
 }
