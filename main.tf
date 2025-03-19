@@ -107,28 +107,6 @@ resource "helm_release" "nginx_ingress" {
   }
 }
 
-resource "kubernetes_secret" "argocd_admin_password" {
-  metadata {
-    name      = "argocd-secret"
-    namespace = "argocd"
-  }
-
-  data = {
-    admin.password = "testing123"
-  }
-
-  type = "Opaque"
-}
-
-variable "argocd_admin_password" {
-  description = "ArgoCD Admin Password"
-  type        = string
-  sensitive   = true
-}
-
-locals {
-  argocd_admin_password = env.ARGOCD_ADMIN_PASS
-}
 
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -139,7 +117,7 @@ resource "helm_release" "argocd" {
 
   set_sensitive {
     name  = "configs.secret.argocdServerAdminPassword"
-    value = var.argocd_admin_password
+    value = "testing123"
   }
 }
 
