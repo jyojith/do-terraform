@@ -13,7 +13,7 @@ terraform {
     }
 
     kubernetes = {
-      source  = "hashicorp/kubernetes"
+      source  = "kubernetes.eu"
       version = "~> 2.6.0"
     }
 
@@ -122,7 +122,6 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubernetes_ingress_v1" "app_ingress" {
-  provider = kubernetes.eu
   metadata {
     name      = "app-ingress"
     namespace = "default"
