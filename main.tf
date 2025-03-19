@@ -13,8 +13,8 @@ terraform {
     }
 
     kubernetes = {
-      source  = "kubernetes.eu"
-      version = "~> 2.6.0"
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.36.0"
     }
 
     kubectl = {
