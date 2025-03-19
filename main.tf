@@ -105,8 +105,9 @@ resource "helm_release" "nginx_ingress" {
     name  = "controller.service.type"
     value = "LoadBalancer"
   }
-}
 
+  depends_on = [digitalocean_kubernetes_cluster.starthack]
+}
 
 resource "helm_release" "argocd" {
   name             = "argocd"
@@ -119,4 +120,6 @@ resource "helm_release" "argocd" {
     name  = "configs.secret.argocdServerAdminPassword"
     value = "testing123"
   }
+
+  depends_on = [helm_release.nginx_ingress]
 }
