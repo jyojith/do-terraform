@@ -122,12 +122,17 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubernetes_ingress_v1" "app_ingress" {
+  provider = kubernetes.eu
   metadata {
     name      = "app-ingress"
     namespace = "default"
     annotations = {
-      "nginx.ingress.kubernetes.io/rewrite-target" = "/"
-      "cert-manager.io/cluster-issuer"             = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/rewrite-target"     = "/"
+      "cert-manager.io/cluster-issuer"                 = "letsencrypt-prod"
+      "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
+      "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600"
+      "nginx.ingress.kubernetes.io/proxy-body-size"    = "50m"
+      "nginx.ingress.kubernetes.io/backend-protocol"   = "HTTPS"
     }
   }
 
@@ -135,8 +140,13 @@ resource "kubernetes_ingress_v1" "app_ingress" {
     ingress_class_name = "nginx"
 
     tls {
-      hosts       = ["app.jyojith.site", "argocd.jyojith.site"]
+      hosts       = ["app.jyojith.site"]
       secret_name = "app-tls"
+    }
+
+    tls {
+      hosts       = ["argocd.jyojith.site"]
+      secret_name = "argocd-tls"
     }
 
     rule {
@@ -167,7 +177,7 @@ resource "kubernetes_ingress_v1" "app_ingress" {
             service {
               name = "argocd-server"
               port {
-                number = 80
+                number = 443 # Ensure ArgoCD uses the correct port if running on HTTPS
               }
             }
           }
