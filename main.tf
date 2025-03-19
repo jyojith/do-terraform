@@ -86,13 +86,6 @@ resource "digitalocean_domain" "jyojith_site" {
   name = "jyojith.site"
 }
 
-resource "digitalocean_record" "ingress" {
-  domain = digitalocean_domain.jyojith_site.name
-  type   = "A"
-  name   = "*.jyojith.site"
-  value  = digitalocean_kubernetes_cluster.starthack.endpoint
-  ttl    = 300
-}
 
 resource "helm_release" "nginx_ingress" {
   name             = "nginx-ingress"
@@ -120,6 +113,25 @@ resource "helm_release" "argocd" {
     name  = "configs.secret.argocdServerAdminPassword"
     value = "testing123"
   }
+
+  depends_on = [helm_release.nginx_ingress]
+}
+
+data "kubernetes_service" "nginx_ingress" {
+  metadata {
+    name      = "ingress-nginx-controller"
+    namespace = "ingress-nginx"
+  }
+
+  depends_on = [helm_release.nginx_ingress]
+}
+
+resource "digitalocean_record" "ingress" {
+  domain = digitalocean_domain.jyojith_site.name
+  type   = "A"
+  name   = "*.jyojith.site"
+  value  = data.kubernetes_service.nginx_ingress.status.0.load_balancer.0.ingress.0.ip
+  ttl    = 300
 
   depends_on = [helm_release.nginx_ingress]
 }
