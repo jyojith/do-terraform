@@ -24,9 +24,6 @@ terraform {
   }
 }
 
-provider "digitalocean" {
-  token = var.do_token
-}
 
 resource "digitalocean_project" "k8s_challenge" {
   name        = "k8s-challenge"
@@ -117,8 +114,7 @@ resource "kubernetes_secret" "argocd_admin_password" {
   }
 
   data = {
-    admin.password      = var.argocd_admin_password
-    admin.passwordMtime = timestamp()
+    admin.password = "testing123"
   }
 
   type = "Opaque"
@@ -191,12 +187,4 @@ resource "kubernetes_ingress_v1" "app_ingress" {
       }
     }
   }
-}
-
-variable "do_token" {
-  default = "dsfdf"
-}
-
-variable "argocd_admin_password" {
-  default = "testing123"
 }
