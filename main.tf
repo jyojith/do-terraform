@@ -85,19 +85,12 @@ provider "kubectl" {
   load_config_file = false
 }
 
-variable "superUserPassword" {}
-variable "replicationUserPassword" {}
 
 
 resource "kubernetes_secret" "starthack_secret" {
   metadata {
     name      = "mystarthack-secret"
     namespace = "default"
-  }
-
-  data = {
-    superUserPassword       = var.superUserPassword
-    replicationUserPassword = var.replicationUserPassword
   }
 
   type = "Opaque"
