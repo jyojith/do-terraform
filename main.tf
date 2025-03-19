@@ -85,11 +85,3 @@ provider "kubectl" {
 resource "digitalocean_domain" "jyojith_site" {
   name = "jyojith.site"
 }
-
-resource "digitalocean_record" "ingress" {
-  domain = digitalocean_domain.jyojith_site.name
-  type   = "A"
-  name   = "*.jyojith.site"
-  value  = digitalocean_kubernetes_cluster.starthack.endpoint
-  ttl    = 300
-}
