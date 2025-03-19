@@ -24,6 +24,10 @@ terraform {
   }
 }
 
+provider "digitalocean" {
+  token = var.do_token
+}
+
 resource "digitalocean_project" "k8s_challenge" {
   name        = "k8s-challenge"
   description = "Start hack 2025 cluster"
@@ -85,22 +89,113 @@ provider "kubectl" {
   load_config_file = false
 }
 
+resource "digitalocean_domain" "jyojith_site" {
+  name = "jyojith.site"
+}
 
+resource "digitalocean_record" "ingress" {
+  domain = digitalocean_domain.jyojith_site.name
+  type   = "A"
+  name   = "*.jyojith.site"
+  value  = digitalocean_kubernetes_cluster.starthack.endpoint
+  ttl    = 300
+}
 
-resource "kubernetes_secret" "starthack_secret" {
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  namespace  = "ingress-nginx"
+  create_namespace = true
+
+  set {
+    name  = "controller.service.type"
+    value = "LoadBalancer"
+  }
+}
+
+resource "kubernetes_secret" "argocd_admin_password" {
   metadata {
-    name      = "mystarthack-secret"
-    namespace = "default"
+    name      = "argocd-secret"
+    namespace = "argocd"
+  }
+
+  data = {
+    admin.password  = var.argocd_admin_password
+    admin.passwordMtime = timestamp()
   }
 
   type = "Opaque"
 }
 
-data "kubectl_path_documents" "docs" {
-  pattern = "./manifests/*.yaml"
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  namespace  = "argocd"
+  create_namespace = true
+
+  set_sensitive {
+    name  = "configs.secret.argocdServerAdminPassword"
+    value = var.argocd_admin_password
+  }
 }
 
-resource "kubectl_manifest" "kubegres" {
-  for_each  = toset(data.kubectl_path_documents.docs.documents)
-  yaml_body = each.value
+resource "kubernetes_ingress_v1" "app_ingress" {
+  metadata {
+    name      = "app-ingress"
+    namespace = "default"
+    annotations = {
+      "nginx.ingress.kubernetes.io/rewrite-target" = "/"
+      "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["app.jyojith.site", "argocd.jyojith.site"]
+      secret_name = "app-tls"
+    }
+
+    rule {
+      host = "app.jyojith.site"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "myapp-service"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+
+    rule {
+      host = "argocd.jyojith.site"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "argocd-server"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
+
+variable "do_token" {}
+variable "argocd_admin_password" {}
