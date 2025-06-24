@@ -21,17 +21,38 @@ provider "digitalocean" {
   token = var.do_token
 }
 
+resource "digitalocean_project" "main" {
+  name        = var.project_name
+  description = "BizQuery ${terraform.workspace} infrastructure"
+  purpose     = "Web Application Hosting"
+  environment = {
+    dev     = "Development"
+    staging = "Staging"
+    prod    = "Production"
+  }[terraform.workspace]
+}
+
+resource "digitalocean_project_resources" "default" {
+  project = digitalocean_project.main.id
+
+  resources = [
+    module.cluster.cluster_urn,
+    module.network.reserved_ip_urn
+  ]
+}
+
+
 provider "kubernetes" {
-  host                   = digitalocean_kubernetes_cluster.main.endpoint
-  token                  = digitalocean_kubernetes_cluster.main.kube_config[0].token
-  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate)
+  host                   = module.cluster.endpoint
+  token                  = module.cluster.token
+  cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
 }
 
 provider "helm" {
-  kubernetes {
-    host                   = digitalocean_kubernetes_cluster.main.endpoint
-    token                  = digitalocean_kubernetes_cluster.main.kube_config[0].token
-    cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.main.kube_config[0].cluster_ca_certificate)
+  kubernetes = {
+    host                   = module.cluster.endpoint
+    token                  = module.cluster.token
+    cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
   }
 }
 
@@ -39,7 +60,8 @@ provider "helm" {
 module "cluster" {
   source      = "./modules/cluster"
   do_token    = var.do_token
-  region      = var.do_region
+  do_region   = var.do_region
+  name        = var.name
   node_count  = var.node_count
   node_size   = var.node_size
   k8s_version = var.k8s_version
@@ -54,22 +76,23 @@ module "network" {
 
 # ArgoCD deployment
 module "argocd" {
-  source          = "./modules/argocd"
-  env             = var.env
-  reserved_ip     = module.network.reserved_ip
-  domain_name     = var.domain_name
-  repo_url        = "https://github.com/unisphere-wiki/do-terraform"
-  branch          = "main"
-  manifests_path  = "k8s/${var.env}"
-  k8s_namespace   = "default"
+  source           = "./modules/argocd"
+  domain_name      = var.domain_name
+  reserved_ip      = module.network.reserved_ip
+  repo_url         = var.repo_url
+  branch           = var.branch
+  manifests_path   = var.manifests_path
+  env              = var.env
+  app_namespace    = var.app_namespace
+  argocd_namespace = var.argocd_namespace
 }
 
 
 # Kong ingress controller
 module "kong" {
-  source             = "./modules/kong"
-  reserved_ip        = module.network.reserved_ip
-  domain_name        = var.domain_name
+  source      = "./modules/kong"
+  reserved_ip = module.network.reserved_ip
+  domain_name = var.domain_name
 }
 
 # Cert-manager

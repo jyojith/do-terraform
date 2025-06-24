@@ -7,8 +7,10 @@ resource "helm_release" "cert_manager" {
 
   create_namespace = true
 
-  set {
-    name  = "installCRDs"
-    value = true
-  }
+  set = [
+    {
+      name  = "installCRDs"
+      value = "true"
+      }
+  ]
 }

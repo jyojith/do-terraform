@@ -1,0 +1,9 @@
+applications:
+  - name: bizquery-dev
+    namespace: argocd
+    repoURL: https://github.com/your-org/do-terraform
+    path: k8s/dev
+    targetRevision: HEAD
+    project: default
+    destinationServer: https://kubernetes.default.svc
+    destinationNamespace: default
