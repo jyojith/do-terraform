@@ -17,13 +17,20 @@ variable "branch" {
 variable "manifests_path" {
   description = "Path to manifest folder relative to the repo root"
   type        = string
+  default     = "k8s/apps"
 }
 
-variable "k8s_namespace" {
-  description = "Namespace to deploy the manifests into"
-  type        = string
-  default     = "default"
+# Namespace where the ArgoCD Application CR will be installed
+variable "argocd_namespace" {
+  type    = string
+  default = "argocd"
 }
+
+# Namespace where the application will be deployed
+variable "app_namespace" {
+  type = string
+}
+
 
 variable "reserved_ip" {
   description = "Shared reserved IP for ArgoCD LoadBalancer"

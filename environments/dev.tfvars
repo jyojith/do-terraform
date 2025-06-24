@@ -1,8 +1,12 @@
 env          = "dev"
-name         = "k8s-dev"
+name         = "bizquery-k8s-dev"
 do_region    = "fra1"
 node_count   = 1
-node_size    = "s-2vcpu-4gb"
-k8s_version  = "1.29.1-do.0"
-
+node_size    = "s-1vcpu-2gb"
+k8s_version  = "1.33.1-do.0"
+project_name = "bizquery-dev"
+repo_url       = "https://github.com/jyojith/do-terraform"
+branch         = "main"
+manifests_path = "k8s/apps/dev"
+app_namespace    = "bizquery-dev"
 domain_name  = "bizquery.dev"
