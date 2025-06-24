@@ -1,19 +1,40 @@
-resource "helm_release" "argocd" {
-  name       = "argocd"
+resource "helm_release" "env_manifests_app" {
+  name       = "bizquery-${var.env}-manifests"
   namespace  = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  version    = "5.46.5"
+  chart      = "argocd-apps"
+  version    = "1.4.1"
 
-  create_namespace = true
+  create_namespace = false
 
-  set {
-    name  = "server.service.type"
-    value = "LoadBalancer"
-  }
+  values = [
+    yamlencode({
+      applications = [
+        {
+          name      = "bizquery-${var.env}-manifests"
+          namespace = "argocd"
+          project   = "default"
 
-  set {
-    name  = "server.service.annotations.service\.beta\.kubernetes\.io/do-loadbalancer-ip"
-    value = var.argocd_reserved_ip
-  }
+          source = {
+            repoURL        = var.repo_url
+            targetRevision = var.branch
+            path           = var.manifests_path
+          }
+
+          destination = {
+            server    = "https://kubernetes.default.svc"
+            namespace = var.k8s_namespace
+          }
+
+          syncPolicy = {
+            automated = {
+              prune    = true
+              selfHeal = true
+            }
+            syncOptions = ["CreateNamespace=true"]
+          }
+        }
+      ]
+    })
+  ]
 }
