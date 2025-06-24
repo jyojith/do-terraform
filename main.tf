@@ -14,10 +14,6 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.11"
     }
-    kubernetes-manifest = {
-      source  = "hashicorp/kubernetes-manifest"
-      version = ">= 0.9.0"
-    }
   }
 }
 
@@ -58,10 +54,16 @@ module "network" {
 
 # ArgoCD deployment
 module "argocd" {
-  source             = "./modules/argocd"
-  reserved_ip        = module.network.reserved_ip
-  domain_name        = var.domain_name
+  source          = "./modules/argocd"
+  env             = var.env
+  reserved_ip     = module.network.reserved_ip
+  domain_name     = var.domain_name
+  repo_url        = "https://github.com/unisphere-wiki/do-terraform"
+  branch          = "main"
+  manifests_path  = "k8s/${var.env}"
+  k8s_namespace   = "default"
 }
+
 
 # Kong ingress controller
 module "kong" {
@@ -84,16 +86,4 @@ variable "env" {
 
 locals {
   k8s_path = "${path.root}/k8s/${var.env}"
-}
-
-resource "kubernetes_manifest" "clusterissuer" {
-  manifest = yamldecode(file("${local.k8s_path}/clusterissuer.yaml"))
-}
-
-resource "kubernetes_manifest" "argocd_ingress" {
-  manifest = yamldecode(file("${local.k8s_path}/ingress-argocd.yaml"))
-}
-
-resource "kubernetes_manifest" "app_ingress" {
-  manifest = yamldecode(file("${local.k8s_path}/ingress-app.yaml"))
 }

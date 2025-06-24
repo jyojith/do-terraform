@@ -1,14 +1,30 @@
-variable "argocd_reserved_ip" {
-  description = "The reserved IP address to assign to ArgoCD service"
+variable "k8s_version" {
+  description = "Kubernetes version for the cluster"
   type        = string
 }
 
-variable "kong_reserved_ip" {
-  description = "The reserved IP address to assign to Kong proxy"
+variable "node_count" {
+  description = "Number of nodes"
+  type        = number
+}
+
+variable "node_size" {
+  description = "Droplet size for nodes"
   type        = string
 }
 
 variable "domain_name" {
-  description = "Environment-specific base domain"
+  description = "Root domain name (like bizquery.dev)"
+  type        = string
+}
+
+variable "do_token" {
+  description = "DigitalOcean API token"
+  type        = string
+  sensitive   = true
+}
+
+variable "do_region" {
+  description = "DigitalOcean region slug"
   type        = string
 }
