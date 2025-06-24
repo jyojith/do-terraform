@@ -1,12 +1,12 @@
 resource "helm_release" "kong" {
-  name       = "kong"
-  namespace  = "kong"
-  repository = "https://charts.konghq.com"
-  chart      = "kong"
-  version    = "2.34.0"  # or latest
+  name             = "kong"
+  namespace        = "kong"
+  repository       = "https://charts.konghq.com"
+  chart            = "kong"
+  version          = "2.34.0" # or latest
   create_namespace = true
 
-  skip_crds = true  # 💡 This avoids the CRD ownership conflict
+  skip_crds = true # 💡 This avoids the CRD ownership conflict
 
   set = [
     {
