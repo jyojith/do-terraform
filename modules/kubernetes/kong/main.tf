@@ -11,6 +11,10 @@ resource "helm_release" "kong" {
     yamlencode({
       proxy = {
         type = "LoadBalancer"
+        tls = {
+          enabled    = true
+          secretName = "bizquery-wildcard-tls"
+        }
       }
 
       ingressController = {
