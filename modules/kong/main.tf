@@ -3,10 +3,10 @@ resource "helm_release" "kong" {
   namespace        = "kong"
   repository       = "https://charts.konghq.com"
   chart            = "kong"
-  version          = "2.34.0" # or latest
+  version          = "2.34.0"
   create_namespace = true
 
-  skip_crds = true # 💡 This avoids the CRD ownership conflict
+  skip_crds = true
 
   set = [
     {
@@ -20,6 +20,46 @@ resource "helm_release" "kong" {
     {
       name  = "ingressController.installCRDs"
       value = "true"
+    },
+    {
+      name  = "proxy.tls.enabled"
+      value = "true"
+    },
+    {
+      name  = "proxy.tls.existingSecret"
+      value = "bizquery-wildcard-tls"
+    },
+    {
+      name  = "manager.enabled"
+      value = "true"
+    },
+    {
+      name  = "manager.type"
+      value = "ClusterIP"
+    },
+    {
+      name  = "manager.ingress.enabled"
+      value = "true"
+    },
+    {
+      name  = "manager.ingress.ingressClassName"
+      value = "kong"
+    },
+    {
+      name  = "manager.ingress.hostname"
+      value = "kong.bizquery.dev"
+    },
+    {
+      name  = "manager.ingress.annotations.cert-manager\\.io/cluster-issuer"
+      value = "letsencrypt-prod"
+    },
+    {
+      name  = "manager.ingress.tls[0].hosts[0]"
+      value = "kong.bizquery.dev"
+    },
+    {
+      name  = "manager.ingress.tls[0].secretName"
+      value = "bizquery-wildcard-tls"
     }
   ]
 }

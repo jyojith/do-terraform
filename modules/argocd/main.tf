@@ -1,22 +1,23 @@
 resource "helm_release" "argocd" {
-  name             = "argocd"
-  namespace        = "argocd"
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  version          = "5.46.5"
+  name       = "argocd"
+  namespace  = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  version    = "5.46.5"
+
   create_namespace = true
 
-  set = [
-    {
-      name  = "server.service.type"
-      value = "LoadBalancer"
-    },
-    {
-      name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/do-loadbalancer-ip"
-      value = var.reserved_ip
-    }
+  values = [
+    yamlencode({
+      server = {
+        service = {
+          type = "ClusterIP"
+        }
+      }
+    })
   ]
 }
+
 
 
 resource "helm_release" "env_manifests_app" {
