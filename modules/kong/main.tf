@@ -11,9 +11,6 @@ resource "helm_release" "kong" {
     yamlencode({
       proxy = {
         type = "LoadBalancer"
-        annotations = {
-          "service.beta.kubernetes.io/do-loadbalancer-ip" = var.reserved_ip
-        }
       }
 
       ingressController = {

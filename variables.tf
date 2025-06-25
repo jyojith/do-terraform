@@ -1,23 +1,3 @@
-variable "k8s_version" {
-  description = "Kubernetes version for the cluster"
-  type        = string
-}
-
-variable "node_count" {
-  description = "Number of nodes"
-  type        = number
-}
-
-variable "node_size" {
-  description = "Droplet size for nodes"
-  type        = string
-}
-
-variable "domain_name" {
-  description = "Root domain name (like bizquery.dev)"
-  type        = string
-}
-
 variable "do_token" {
   description = "DigitalOcean API token"
   type        = string
@@ -25,48 +5,69 @@ variable "do_token" {
 }
 
 variable "do_region" {
-  description = "DigitalOcean region slug"
-  type        = string
-}
-
-variable "name" {
-  description = "Name for the cluster resources"
+  description = "Region to deploy DigitalOcean resources"
   type        = string
 }
 
 variable "project_name" {
-  description = "The name of the DigitalOcean project"
+  description = "Name of the DigitalOcean project"
+  type        = string
+}
+
+variable "name" {
+  description = "Name of the Kubernetes cluster"
+  type        = string
+}
+
+variable "node_count" {
+  description = "Number of Kubernetes worker nodes"
+  type        = number
+}
+
+variable "node_size" {
+  description = "Size of Kubernetes nodes"
+  type        = string
+}
+
+variable "k8s_version" {
+  description = "Kubernetes version to use"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Domain name to use for routing"
   type        = string
 }
 
 variable "repo_url" {
-  description = "Git repository URL containing Kubernetes manifests"
+  description = "Git repository containing Kubernetes manifests"
   type        = string
 }
 
 variable "branch" {
-  description = "Git branch to deploy from"
+  description = "Git branch to track"
   type        = string
-  default     = "main"
 }
 
 variable "manifests_path" {
-  description = "Path to manifests in the repository"
+  description = "Path in the repo where app manifests are defined"
   type        = string
-  default     = "k8s/apps"
+}
+
+variable "env" {
+  description = "Environment name (e.g., dev, staging, prod)"
+  type        = string
+  default     = "dev"
 }
 
 variable "app_namespace" {
-  description = "Namespace where the application is deployed"
+  description = "Kubernetes namespace to deploy app resources"
   type        = string
+  default     = "default"
 }
 
-variable "argocd_namespace" {
-  description = "Namespace where ArgoCD apps are created"
-  type        = string
-  default     = "argocd"
-}
 variable "argocd_admin_password_hash" {
-  description = "BCrypt-hashed admin password for ArgoCD"
+  description = "Pre-hashed ArgoCD admin password (bcrypt)"
   type        = string
+  sensitive   = true
 }

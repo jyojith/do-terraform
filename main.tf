@@ -1,5 +1,3 @@
-# infra/main.tf
-
 terraform {
   required_providers {
     digitalocean = {
@@ -21,7 +19,28 @@ provider "digitalocean" {
   token = var.do_token
 }
 
+provider "kubernetes" {
+  host                   = module.cluster.endpoint
+  token                  = module.cluster.token
+  cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
+}
 
+provider "kubernetes" {
+  alias = "k8s"
+  host                   = module.cluster.endpoint
+  token                  = module.cluster.token
+  cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = module.cluster.endpoint
+    token                  = module.cluster.token
+    cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
+  }
+}
+
+# Create DO project
 resource "digitalocean_project" "main" {
   name        = var.project_name
   description = "BizQuery ${terraform.workspace} infrastructure"
@@ -37,27 +56,12 @@ resource "digitalocean_project_resources" "default" {
   project = digitalocean_project.main.id
 
   resources = [
-    module.cluster.cluster_urn,
-    module.network.reserved_ip_urn
+    module.cluster.cluster_urn
+    # DNS records will automatically be tracked by DigitalOcean UI
   ]
 }
 
-
-provider "kubernetes" {
-  host                   = module.cluster.endpoint
-  token                  = module.cluster.token
-  cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
-}
-
-provider "helm" {
-  kubernetes = {
-    host                   = module.cluster.endpoint
-    token                  = module.cluster.token
-    cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
-  }
-}
-
-# Kubernetes cluster module
+# Kubernetes Cluster
 module "cluster" {
   source      = "./modules/cluster"
   do_token    = var.do_token
@@ -66,56 +70,51 @@ module "cluster" {
   node_count  = var.node_count
   node_size   = var.node_size
   k8s_version = var.k8s_version
-
-  depends_on = [module.network]
 }
 
-# Shared Reserved IP + DNS network module
+# Kong Ingress Controller
+module "kong" {
+  source      = "./modules/kong"
+  domain_name = var.domain_name
+
+  depends_on = [module.cluster, module.cert_manager]
+}
+
+# Cert-Manager
+module "cert_manager" {
+  source = "./modules/cert-manager"
+
+  depends_on = [module.cluster]
+}
+
+# DigitalOcean DNS (based on Kong LoadBalancer IP)
 module "network" {
   source      = "./modules/network"
   domain_name = var.domain_name
   region      = var.do_region
+
+  providers = {
+    kubernetes.k8s = kubernetes.k8s
+  }
+
+  depends_on = [module.kong]
 }
 
-# ArgoCD deployment
+# ArgoCD Installation
 module "argocd" {
-  source           = "./modules/argocd"
-  domain_name      = var.domain_name
-  reserved_ip      = module.network.reserved_ip
-  repo_url         = var.repo_url
-  branch           = var.branch
-  manifests_path   = var.manifests_path
-  env              = var.env
-  app_namespace    = var.app_namespace
-  argocd_namespace = var.argocd_namespace
+  source                    = "./modules/argocd"
+  domain_name               = var.domain_name
+  repo_url                  = var.repo_url
+  branch                    = var.branch
+  manifests_path            = var.manifests_path
+  env                       = var.env
+  app_namespace             = var.app_namespace
+  argocd_namespace          = "argocd"
   argocd_admin_password_hash = var.argocd_admin_password_hash
 
   depends_on = [module.cluster, module.cert_manager, module.kong, module.network]
 }
 
-
-# Kong ingress controller
-module "kong" {
-  source      = "./modules/kong"
-  reserved_ip = module.network.reserved_ip
-  domain_name = var.domain_name
-
-  depends_on = [module.cluster, module.cert_manager, module.network]
-}
-
-# Cert-manager
-module "cert_manager" {
-  source = "./modules/cert-manager"
-
-  depends_on = [module.cluster, module.network]
-}
-
-# Load Kubernetes manifests for current environment
-variable "env" {
-  description = "Deployment environment (dev, staging, prod)"
-  type        = string
-  default     = "dev"
-}
 
 locals {
   k8s_path = "${path.root}/k8s/${var.env}"
