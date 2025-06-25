@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: loading-page
-          image: nginxdemos/hello:plain-text
+          image: edirom/vife-website
           ports:
             - containerPort: 80
