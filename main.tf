@@ -63,7 +63,7 @@ resource "digitalocean_project_resources" "default" {
 
 # Kubernetes Cluster
 module "cluster" {
-  source      = "./modules/cluster"
+  source      = "./modules/digitalocean/cluster"
   do_token    = var.do_token
   do_region   = var.do_region
   name        = var.name
@@ -74,7 +74,7 @@ module "cluster" {
 
 # Kong Ingress Controller
 module "kong" {
-  source      = "./modules/kong"
+  source      = "./modules/kubernetes/kong"
   domain_name = var.domain_name
 
   depends_on = [module.cluster, module.cert_manager]
@@ -82,14 +82,14 @@ module "kong" {
 
 # Cert-Manager
 module "cert_manager" {
-  source = "./modules/cert-manager"
+  source = "./modules/kubernetes/cert-manager"
 
   depends_on = [module.cluster]
 }
 
 # DigitalOcean DNS (based on Kong LoadBalancer IP)
 module "network" {
-  source      = "./modules/network"
+  source      = "./modules/digitalocean/network"
   domain_name = var.domain_name
   region      = var.do_region
 
@@ -102,7 +102,7 @@ module "network" {
 
 # ArgoCD Installation
 module "argocd" {
-  source                    = "./modules/argocd"
+  source                    = "./modules/kubernetes/argocd"
   domain_name               = var.domain_name
   repo_url                  = var.repo_url
   branch                    = var.branch
