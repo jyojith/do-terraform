@@ -1,24 +1,25 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: argocd-ingress
-  namespace: argocd
+  name: loading-page-ingress
+  namespace: loading-page
   annotations:
     konghq.com/strip-path: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: kong
   rules:
-    - host: argocd.bizquery.dev
+    - host: bizquery.dev
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: argocd-server
+                name: loading-page-service
                 port:
-                  number: 443
+                  number: 80
   tls:
     - hosts:
-        - argocd.bizquery.dev
-      secretName: bizquery-wildcard-tls  # shared wildcard cert for *.bizquery.dev
+        - bizquery.dev
+      secretName: bizquery-wildcard-tls
