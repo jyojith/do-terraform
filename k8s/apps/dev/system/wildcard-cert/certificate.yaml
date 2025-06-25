@@ -9,5 +9,5 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - '*.bizquery.dev'
-    - bizquery.dev
+    - "*.bizquery.dev"
+    - "bizquery.dev"
