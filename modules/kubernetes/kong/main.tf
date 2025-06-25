@@ -29,6 +29,10 @@ resource "helm_release" "kong" {
           annotations = {
             "konghq.com/strip-path" = "true"
           }
+          tls = {
+            enabled    = true
+            secretName = "bizquery-wildcard-tls"
+          }
         }
       }
     })
