@@ -21,11 +21,11 @@ resource "helm_release" "kong" {
         enabled = true
         type    = "ClusterIP"
         ingress = {
-          enabled = true
+          enabled          = true
           ingressClassName = "kong"
-          hostname          = "kong.${var.domain_name}"
-          path              = "/"
-          pathType          = "Prefix"
+          hostname         = "kong.${var.domain_name}"
+          path             = "/"
+          pathType         = "Prefix"
           annotations = {
             "konghq.com/strip-path" = "true"
           }
