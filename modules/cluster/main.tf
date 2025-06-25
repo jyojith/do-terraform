@@ -1,7 +1,3 @@
-provider "digitalocean" {
-  token = var.do_token
-}
-
 resource "digitalocean_kubernetes_cluster" "main" {
   name    = var.name
   region  = var.do_region

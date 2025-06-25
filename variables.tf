@@ -66,3 +66,7 @@ variable "argocd_namespace" {
   type        = string
   default     = "argocd"
 }
+variable "argocd_admin_password_hash" {
+  description = "BCrypt-hashed admin password for ArgoCD"
+  type        = string
+}
