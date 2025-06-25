@@ -7,9 +7,12 @@ spec:
   generators:
     - list:
         elements:
+          - name: system-resources
+            path: k8s/apps/dev/system
+            namespace: default
           - name: loading-page
-            namespace: loading-page
             path: k8s/apps/dev/loading-page
+            namespace: loading-page
   template:
     metadata:
       name: '{{name}}'
@@ -19,12 +22,14 @@ spec:
         repoURL: https://github.com/jyojith/do-terraform.git
         targetRevision: main
         path: '{{path}}'
+        directory:
+          recurse: true
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
       syncPolicy:
         automated:
-          prune: true
           selfHeal: true
+          prune: true
         syncOptions:
           - CreateNamespace=true
