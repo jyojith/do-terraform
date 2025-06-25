@@ -26,7 +26,7 @@ provider "kubernetes" {
 }
 
 provider "kubernetes" {
-  alias = "k8s"
+  alias                  = "k8s"
   host                   = module.cluster.endpoint
   token                  = module.cluster.token
   cluster_ca_certificate = base64decode(module.cluster.cluster_ca_certificate)
@@ -102,14 +102,14 @@ module "network" {
 
 # ArgoCD Installation
 module "argocd" {
-  source                    = "./modules/kubernetes/argocd"
-  domain_name               = var.domain_name
-  repo_url                  = var.repo_url
-  branch                    = var.branch
-  manifests_path            = var.manifests_path
-  env                       = var.env
-  app_namespace             = var.app_namespace
-  argocd_namespace          = "argocd"
+  source                     = "./modules/kubernetes/argocd"
+  domain_name                = var.domain_name
+  repo_url                   = var.repo_url
+  branch                     = var.branch
+  manifests_path             = var.manifests_path
+  env                        = var.env
+  app_namespace              = var.app_namespace
+  argocd_namespace           = "argocd"
   argocd_admin_password_hash = var.argocd_admin_password_hash
 
   depends_on = [module.cluster, module.cert_manager, module.kong, module.network]
