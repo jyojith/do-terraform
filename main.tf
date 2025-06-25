@@ -21,6 +21,7 @@ provider "digitalocean" {
   token = var.do_token
 }
 
+
 resource "digitalocean_project" "main" {
   name        = var.project_name
   description = "BizQuery ${terraform.workspace} infrastructure"
@@ -65,6 +66,8 @@ module "cluster" {
   node_count  = var.node_count
   node_size   = var.node_size
   k8s_version = var.k8s_version
+
+  depends_on = [module.network]
 }
 
 # Shared Reserved IP + DNS network module
@@ -85,6 +88,9 @@ module "argocd" {
   env              = var.env
   app_namespace    = var.app_namespace
   argocd_namespace = var.argocd_namespace
+  argocd_admin_password_hash = var.argocd_admin_password_hash
+
+  depends_on = [module.cluster, module.cert_manager, module.kong, module.network]
 }
 
 
@@ -93,11 +99,15 @@ module "kong" {
   source      = "./modules/kong"
   reserved_ip = module.network.reserved_ip
   domain_name = var.domain_name
+
+  depends_on = [module.cluster, module.cert_manager, module.network]
 }
 
 # Cert-manager
 module "cert_manager" {
   source = "./modules/cert-manager"
+
+  depends_on = [module.cluster, module.network]
 }
 
 # Load Kubernetes manifests for current environment

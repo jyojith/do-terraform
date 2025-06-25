@@ -41,3 +41,7 @@ variable "domain_name" {
   description = "Domain name for routing"
   type        = string
 }
+variable "argocd_admin_password_hash" {
+  description = "BCrypt-hashed admin password for ArgoCD"
+  type        = string
+}
