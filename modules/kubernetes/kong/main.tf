@@ -42,3 +42,10 @@ resource "helm_release" "kong" {
     })
   ]
 }
+
+data "kubernetes_service" "kong_proxy" {
+  metadata {
+    name      = "kong-kong-proxy"
+    namespace = "kong"
+  }
+}

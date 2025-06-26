@@ -35,3 +35,11 @@ resource "digitalocean_record" "argocd" {
   value  = data.kubernetes_service.kong_lb.status[0].load_balancer[0].ingress[0].ip
   ttl    = 300
 }
+
+resource "digitalocean_record" "kong" {
+  domain = var.domain_name
+  type   = "A"
+  name   = "kong"
+  value  = var.kong_lb_ip # Replace with output if available
+  ttl    = 60
+}
