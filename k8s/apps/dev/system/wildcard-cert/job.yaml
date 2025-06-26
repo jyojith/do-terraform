@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-wildcard-secret-to-kong
+  namespace: kong
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: secret-syncer
+      restartPolicy: Never
+      containers:
+        - name: sync
+          image: bitnami/kubectl:1.29
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for secret in cert-manager..."
+              until kubectl get secret bizquery-wildcard-tls -n cert-manager; do sleep 5; done
+              kubectl get secret bizquery-wildcard-tls -n cert-manager -o yaml | \
+              sed 's/namespace: cert-manager/namespace: kong/' | \
+              kubectl apply -f -
