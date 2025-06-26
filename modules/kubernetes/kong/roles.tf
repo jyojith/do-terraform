@@ -7,6 +7,6 @@ resource "kubernetes_role" "manage_secrets" {
   rule {
     api_groups = [""]
     resources  = ["secrets"]
-    verbs      = ["get", "create", "update", "patch"]
+    verbs      = ["get", "list", "create", "update", "delete"]
   }
 }
