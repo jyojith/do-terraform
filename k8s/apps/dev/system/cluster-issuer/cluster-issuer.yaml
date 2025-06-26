@@ -10,7 +10,7 @@ spec:
       name: letsencrypt-prod
     solvers:
       - dns01:
-        digitalocean:
-          tokenSecretRef:
-            name: do-dns-token
-            key: access-token
+          digitalocean:
+            tokenSecretRef:
+              name: do-dns-token
+              key: access-token
