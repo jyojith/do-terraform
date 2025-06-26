@@ -7,9 +7,6 @@ metadata:
     app: copy-wildcard-secret
 spec:
   backoffLimit: 3
-  selector:
-    matchLabels:
-      app: copy-wildcard-secret
   template:
     metadata:
       labels:
