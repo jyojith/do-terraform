@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     konghq.com/strip-path: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: kong
   rules:
