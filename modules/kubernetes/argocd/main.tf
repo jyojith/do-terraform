@@ -13,6 +13,9 @@ resource "helm_release" "argocd" {
         secret = {
           argocdServerAdminPassword = var.argocd_admin_password_hash
         }
+        cm = {
+          "url" = "https://argocd.${var.domain_name}"
+        }
       }
       server = {
         service = {

@@ -82,7 +82,8 @@ module "kong" {
 
 # Cert-Manager
 module "cert_manager" {
-  source = "./modules/kubernetes/cert-manager"
+  source   = "./modules/kubernetes/cert-manager"
+  do_token = var.do_token
 
   depends_on = [module.cluster]
 }
@@ -92,6 +93,7 @@ module "network" {
   source      = "./modules/digitalocean/network"
   domain_name = var.domain_name
   region      = var.do_region
+  kong_lb_ip  = module.kong.kong_lb_ip
 
   providers = {
     kubernetes.k8s = kubernetes.k8s
