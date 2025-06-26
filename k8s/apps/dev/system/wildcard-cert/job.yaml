@@ -24,7 +24,7 @@ spec:
               echo "Waiting for secret in cert-manager..."
               until kubectl get secret bizquery-wildcard-tls -n cert-manager; do sleep 5; done
 
-              echo "Copying secret to kong namespace..."
+              echo "Copying secret to kong namespace (force replace)..."
               kubectl get secret bizquery-wildcard-tls -n cert-manager -o yaml | \
               sed 's/namespace: cert-manager/namespace: kong/' | \
-              kubectl apply -f -
+              kubectl replace -f - --force
