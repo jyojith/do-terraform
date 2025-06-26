@@ -3,9 +3,17 @@ kind: Job
 metadata:
   name: copy-wildcard-secret-to-kong
   namespace: kong
+  labels:
+    app: copy-wildcard-secret
 spec:
   backoffLimit: 3
+  selector:
+    matchLabels:
+      app: copy-wildcard-secret
   template:
+    metadata:
+      labels:
+        app: copy-wildcard-secret
     spec:
       serviceAccountName: secret-syncer
       restartPolicy: Never
@@ -18,6 +26,8 @@ spec:
             - |
               echo "Waiting for secret in cert-manager..."
               until kubectl get secret bizquery-wildcard-tls -n cert-manager; do sleep 5; done
+
+              echo "Copying secret to kong namespace..."
               kubectl get secret bizquery-wildcard-tls -n cert-manager -o yaml | \
               sed 's/namespace: cert-manager/namespace: kong/' | \
               kubectl apply -f -
