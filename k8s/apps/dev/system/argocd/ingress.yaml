@@ -17,8 +17,8 @@ spec:
               service:
                 name: argocd-server
                 port:
-                  number: 443
+                  number: 80
   tls:
     - hosts:
         - argocd.bizquery.dev
-      secretName: bizquery-wildcard-tls  # shared wildcard cert for *.bizquery.dev
+      secretName: bizquery-wildcard-tls
