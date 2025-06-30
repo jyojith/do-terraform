@@ -1,4 +1,0 @@
-resources:
-  - wildcard-cert/
-  - cluster-issuer/
-  - argocd/

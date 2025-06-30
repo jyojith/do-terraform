@@ -72,34 +72,22 @@ module "cluster" {
   k8s_version = var.k8s_version
 }
 
-# Kong Ingress Controller
-module "kong" {
-  source      = "./modules/kubernetes/kong"
+module "traefik" {
+  source      = "./modules/kubernetes/traefik"
   domain_name = var.domain_name
-
-  depends_on = [module.cluster, module.cert_manager]
+  do_token    = var.do_token
 }
 
-# Cert-Manager
-module "cert_manager" {
-  source   = "./modules/kubernetes/cert-manager"
-  do_token = var.do_token
 
-  depends_on = [module.cluster]
-}
-
-# DigitalOcean DNS (based on Kong LoadBalancer IP)
+# DigitalOcean DNS (based on Traefik LoadBalancer IP)
 module "network" {
   source      = "./modules/digitalocean/network"
   domain_name = var.domain_name
   region      = var.do_region
-  kong_lb_ip  = module.kong.kong_lb_ip
 
   providers = {
     kubernetes.k8s = kubernetes.k8s
   }
-
-  depends_on = [module.kong]
 }
 
 # ArgoCD Installation
@@ -114,7 +102,7 @@ module "argocd" {
   argocd_namespace           = "argocd"
   argocd_admin_password_hash = var.argocd_admin_password_hash
 
-  depends_on = [module.cluster, module.cert_manager, module.kong, module.network]
+  depends_on = [module.cluster, module.network]
 }
 
 

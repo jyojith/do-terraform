@@ -7,9 +7,6 @@ spec:
   generators:
     - list:
         elements:
-          - name: system-resources
-            path: k8s/apps/dev/system
-            namespace: default
           - name: loading-page
             path: k8s/apps/dev/loading-page
             namespace: loading-page
