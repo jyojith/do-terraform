@@ -6,10 +6,6 @@ data "kubernetes_service" "traefik_lb" {
   }
 }
 
-resource "digitalocean_domain" "this" {
-  name = var.domain_name
-}
-
 resource "digitalocean_record" "root_domain" {
   domain = var.domain_name
   type   = "A"
@@ -27,7 +23,7 @@ resource "digitalocean_record" "wildcard" {
 }
 
 resource "digitalocean_record" "argocd" {
-  domain = digitalocean_domain.this.name
+  domain = var.domain_name
   type   = "A"
   name   = "argocd"
   value  = var.traefik_lb_ip

@@ -15,6 +15,11 @@ ports:
     expose: true
     exposedPort: 443
     protocol: TCP
+  traefik:
+    port: 9000
+    expose: true
+    exposedPort: 9000
+    protocol: TCP
 
 ingressRoute:
   dashboard:
@@ -27,70 +32,33 @@ service:
 additionalArguments:
   - "--entrypoints.web.address=:8000"
   - "--entrypoints.websecure.address=:8443"
-  - "--certificatesresolvers.do.acme.dnschallenge=true"
-  - "--certificatesresolvers.do.acme.dnschallenge.provider=digitalocean"
-  - "--certificatesresolvers.do.acme.email=jyojith@unisphere.wiki"
-  - "--certificatesresolvers.do.acme.storage=/data/acme.json"
-  - "--certificatesresolvers.do.acme.dnschallenge.delaybeforecheck=0"
-  - "--api.insecure=true"
+  - "--providers.kubernetesingress=true"
+  - "--providers.kubernetescrd=true"
+  - "--api.dashboard=true"
+  - "--api.insecure=false"
   - "--accesslog=true"
-  - "--log.level=INFO"
+  - "--log.level=DEBUG"
 
-envFrom:
-  - secretRef:
-      name: do-dns-secret
-
-persistence:
-  enabled: true
-  existingClaim: ${pvc_name}
-  accessMode: ReadWriteOnce
-  size: 1Gi
-  storageClass: ${storage_class_name}
+tlsStore:
+  default:
+    defaultCertificate:
+      secretName: ${tls_secret_name}
 
 extraObjects:
-  - apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: whoami
-      namespace: traefik
-    spec:
-      replicas: 1
-      selector:
-        matchLabels:
-          app: whoami
-      template:
-        metadata:
-          labels:
-            app: whoami
-        spec:
-          containers:
-            - name: whoami
-              image: traefik/whoami
-              ports:
-                - containerPort: 80
-  - apiVersion: v1
-    kind: Service
-    metadata:
-      name: whoami
-      namespace: traefik
-    spec:
-      selector:
-        app: whoami
-      ports:
-        - port: 80
+  # Dashboard IngressRoute
   - apiVersion: traefik.containo.us/v1alpha1
     kind: IngressRoute
     metadata:
-      name: whoami
+      name: traefik-dashboard
       namespace: traefik
     spec:
       entryPoints:
+        - traefik
         - websecure
       routes:
-        - match: Host(`whoami.${domain_name}`)
+        - match: Host(`traefik.${domain_name}`)
           kind: Rule
           services:
-            - name: whoami
-              port: 80
-      tls:
-        certResolver: do
+            - name: api@internal
+              kind: TraefikService
+      tls: {}
