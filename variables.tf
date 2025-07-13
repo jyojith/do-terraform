@@ -71,3 +71,14 @@ variable "argocd_admin_password_hash" {
   type        = string
   sensitive   = true
 }
+
+variable "email" {
+  description = "Email address for certificate issuance"
+  type        = string
+}
+
+variable "tls_secret_name" {
+  description = "Kubernetes TLS secret name for wildcard cert"
+  type        = string
+  default     = "bizquery-wildcard-tls"
+}
