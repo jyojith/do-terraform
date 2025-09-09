@@ -4,6 +4,14 @@ deployment:
 podSecurityContext:
   fsGroup: 65532
 
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true
+    namespaces: []
+  kubernetesIngress:
+    allowExternalNameServices: true
+    namespaces: []
+
 ports:
   web:
     port: 8000
@@ -32,12 +40,14 @@ service:
 additionalArguments:
   - "--entrypoints.web.address=:8000"
   - "--entrypoints.websecure.address=:8443"
-  - "--providers.kubernetesingress=true"
-  - "--providers.kubernetescrd=true"
+  - "--entrypoints.traefik.address=:9000"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
   - "--log.level=DEBUG"
+  - "--providers.kubernetesingress=true"
+  - "--providers.kubernetescrd=true"
+  - "--entrypoints.traefik.http.tls=true"
 
 tlsStore:
   default:
@@ -45,12 +55,13 @@ tlsStore:
       secretName: ${tls_secret_name}
 
 extraObjects:
-  # Dashboard IngressRoute
   - apiVersion: traefik.containo.us/v1alpha1
     kind: IngressRoute
     metadata:
       name: traefik-dashboard
       namespace: traefik
+      labels:
+        traefik.enable: "true"
     spec:
       entryPoints:
         - traefik
