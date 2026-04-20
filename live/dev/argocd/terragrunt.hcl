@@ -26,10 +26,9 @@ dependency "doks" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
-# Ordering only: Argo CD should apply after certs, ingress, and DNS exist.
+# Ordering: Argo CD after Traefik (ACME) and DNS exist.
 dependencies {
   paths = [
-    "../cert-manager",
     "../traefik",
     "../dns",
   ]

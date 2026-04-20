@@ -15,5 +15,4 @@ locals {
   branch          = "main"
   manifests_path  = "k8s/apps/dev"
   app_namespace   = "bizquery-dev"
-  tls_secret_name = "bizquery-wildcard-tls"
 }

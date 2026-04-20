@@ -1,10 +1,15 @@
 variable "domain_name" {
-  description = "Domain name for routing"
+  description = "Apex domain for ACME and routes"
   type        = string
 }
 
-variable "tls_secret_name" {
-  description = "Kubernetes TLS secret name for Traefik default cert"
+variable "email" {
+  description = "Email for Let's Encrypt (Traefik ACME)"
   type        = string
-  default     = "bizquery-wildcard-tls"
+}
+
+variable "do_token" {
+  description = "DigitalOcean API token for DNS-01 challenge"
+  type        = string
+  sensitive   = true
 }
