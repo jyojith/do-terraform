@@ -46,18 +46,10 @@ terraform {
   source = "${get_repo_root()}/terraform/stacks/argocd"
 }
 
-generate "providers" {
+generate "providers_legacy_stub" {
   path      = "providers.generated.tf"
   if_exists = "overwrite_terragrunt"
-  contents  = <<-EOF
-provider "helm" {
-  kubernetes = {
-    host                   = "${dependency.doks.outputs.endpoint}"
-    token                  = "${dependency.doks.outputs.token}"
-    cluster_ca_certificate = base64decode("${dependency.doks.outputs.cluster_ca_certificate}")
-  }
-}
-EOF
+  contents  = "# Superseded by providers.tf in the stack (inputs from Terragrunt).\n"
 }
 
 inputs = {
@@ -68,4 +60,7 @@ inputs = {
   env                        = local.env.locals.env
   app_namespace              = local.env.locals.app_namespace
   argocd_admin_password_hash = get_env("TF_VAR_argocd_admin_password_hash", "")
+  k8s_host                   = dependency.doks.outputs.endpoint
+  k8s_token                  = dependency.doks.outputs.token
+  k8s_cluster_ca_certificate = dependency.doks.outputs.cluster_ca_certificate
 }
