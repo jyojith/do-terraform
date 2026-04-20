@@ -1,16 +1,16 @@
 # DigitalOcean Kubernetes (DOKS) — Terragrunt + Terraform
 
-This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supporting pieces: **project + domain**, **Traefik** ingress with **built-in ACME** (Let’s Encrypt DNS-01 via DigitalOcean), **DNS A records**, and **Argo CD** GitOps. Infrastructure is split into **Terragrunt stacks** under `live/dev/` with separate state per stack, explicit **dependencies**, and **DRY** shared config.
+This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supporting pieces: **project + domain**, **Traefik** ingress with **built-in ACME** (Let’s Encrypt DNS-01 via DigitalOcean), **DNS A records**, and **Argo CD** GitOps. Infrastructure is split into **Terragrunt stacks** under `environments/dev/` with separate state per stack, explicit **dependencies**, and **DRY** shared config.
 
 ## Why Terragrunt?
 
 - **Separate state** per layer (cluster vs addons vs DNS) for safer blast radius and parallel plans where possible.
 - **`dependency` blocks** wire Kubernetes/Helm providers from the `doks` stack outputs (endpoint, token, CA).
-- **`live/dev/env.hcl`** holds non-secret defaults; tokens and Argo CD password hash come from **`TF_VAR_*`** / **`DO_TOKEN`**.
+- **`environments/dev/env.hcl`** holds non-secret defaults; tokens and Argo CD password hash come from **`TF_VAR_*`** / **`DO_TOKEN`**.
 
 ## Stack layout and dependency graph
 
-Terragrunt resolves dependencies from `live/dev/*/terragrunt.hcl` (`dependency` and `dependencies` blocks). **Verified** with `terragrunt graph-dependencies` from `live/dev/` (also: `./scripts/tg.sh graph`):
+Terragrunt resolves dependencies from `environments/dev/*/terragrunt.hcl` (`dependency` and `dependencies` blocks). **Verified** with `terragrunt graph-dependencies` from `environments/dev/` (also: `./scripts/tg.sh graph`):
 
 ```dot
 digraph {
@@ -53,7 +53,7 @@ flowchart TD
 ├── Makefile                     # Shortcuts: tg-clean, tg-init, tg-plan, …
 ├── scripts/tg.sh                # Terragrunt helpers (cache, run-all, graph, env-check)
 ├── .env.example                 # Template for TF_VAR_* — copy to .env (gitignored)
-├── live/
+├── environments/
 │   ├── root.hcl                 # Shared remote_state (local backend path per stack)
 │   └── dev/
 │       ├── env.hcl              # Non-secret locals (region, cluster size, domain, email, …)
@@ -71,26 +71,29 @@ flowchart TD
 │   ├── digitalocean/network
 │   └── kubernetes/{traefik,argocd}
 ├── k8s/apps/dev/                # Sample manifests; path used by Argo CD
-└── .github/workflows/terraform.yml   # terragrunt run-all validate/plan/apply
+└── .github/workflows/
+    ├── fmt-validate.yml              # on every push + PRs: fmt, hclfmt, validate
+    ├── terraform.yml                 # main + PRs: plan only (no apply)
+    └── terragrunt-apply.yml          # deploy/** tags: apply
 ```
 
-**Why split `live/` vs `terraform/stacks/`?**  
-`live/` holds **environment-specific** Terragrunt only (dependencies, inputs, generated providers). **`terraform/stacks/`** holds the Terraform root modules once, referenced via `terraform { source = "${get_repo_root()}/terraform/stacks/<stack>" }`. That matches the usual pattern: **thin live config**, **one copy of each stack’s `.tf` files**, shared **`modules/`**.
+**Why split `environments/` vs `terraform/stacks/`?**  
+`environments/` holds **environment-specific** Terragrunt only (dependencies, inputs, generated providers). **`terraform/stacks/`** holds the Terraform root modules once, referenced via `terraform { source = "${get_repo_root()}/terraform/stacks/<stack>" }`. That matches the usual pattern: **thin environment config**, **one copy of each stack’s `.tf` files**, shared **`modules/`**.
 
 ### Implementation notes
 
-- Each `live/dev/<stack>/terragrunt.hcl` **generates** a tiny `repo_paths.tf` (`local.repo_root = get_repo_root()`) so `${local.repo_root}/modules/...` resolves correctly after Terragrunt copies the stack into `.terragrunt-cache/`. Run stacks with **Terragrunt**, not raw `terraform` in `terraform/stacks/` alone, unless you add that file yourself for local experiments.
+- Each `environments/dev/<stack>/terragrunt.hcl` **generates** a tiny `repo_paths.tf` (`local.repo_root = get_repo_root()`) so `${local.repo_root}/modules/...` resolves correctly after Terragrunt copies the stack into `.terragrunt-cache/`. Run stacks with **Terragrunt**, not raw `terraform` in `terraform/stacks/` alone, unless you add that file yourself for local experiments.
 - Kubernetes-dependent stacks **generate** `providers.generated.tf` from **`dependency.doks.outputs`** (Helm uses the `kubernetes = { … }` map form required by **Helm provider v3**).
 - **Mock outputs** on the `doks` / `traefik` dependencies allow `validate` / `plan` when upstream state is empty (CI / cold start). Real applies use outputs from state after each dependency is applied.
 
 ### Remote state
 
-`live/root.hcl` uses a **local** backend with state stored next to each stack (`terraform.tfstate` in that stack directory). For teams, replace this block with **S3**, **GCS**, **Terraform Cloud**, etc., still via Terragrunt’s `remote_state` (see [Terragrunt remote state](https://terragrunt.gruntwork.io/docs/features/keep-your-remote-state-configuration-dry/)).
+`environments/root.hcl` uses a **local** backend with state stored next to each stack (`terraform.tfstate` in that stack directory). For teams, replace this block with **S3**, **GCS**, **Terraform Cloud**, etc., still via Terragrunt’s `remote_state` (see [Terragrunt remote state](https://terragrunt.gruntwork.io/docs/features/keep-your-remote-state-configuration-dry/)).
 
 ## Prerequisites
 
 - [Terraform](https://www.terraform.io/) **>= 1.5** (or compatible OpenTofu)
-- [Terragrunt](https://terragrunt.gruntwork.io/) (see `TG_VERSION` in `.github/workflows/terraform.yml` for the CI pin)
+- [Terragrunt](https://terragrunt.gruntwork.io/) (see `TG_VERSION` in `.github/workflows/*.yml` for the CI pin)
 - DigitalOcean API token with permissions for Kubernetes, DNS (for ACME DNS-01), and project resources
 
 ## Configure secrets
@@ -102,7 +105,7 @@ Export (or use a private `*.auto.tfvars` / CI secrets):
 | `TF_VAR_do_token` or `DO_TOKEN` | DigitalOcean API token (provider + **Traefik ACME DNS challenge**) |
 | `TF_VAR_argocd_admin_password_hash` | Bcrypt hash for Argo CD `admin` |
 
-`live/dev/env.hcl` sets **`email`** for ACME registration (non-secret).
+`environments/dev/env.hcl` sets **`email`** for ACME registration (non-secret).
 
 Local file (recommended): copy **`.env.example`** to **`.env`** in the repo root (`.env` is gitignored), then:
 
@@ -114,15 +117,15 @@ set -a && source .env && set +a
 
 | Command | What it does |
 |---------|----------------|
-| `make tg-clean` / `./scripts/tg.sh clean-cache` | Delete all `live/**/.terragrunt-cache` directories (forces a fresh module copy on next run) |
-| `make tg-init` / `./scripts/tg.sh init-all` | `terragrunt run-all init` from `live/dev` |
+| `make tg-clean` / `./scripts/tg.sh clean-cache` | Delete all `environments/**/.terragrunt-cache` directories (forces a fresh module copy on next run) |
+| `make tg-init` / `./scripts/tg.sh init-all` | `terragrunt run-all init` from `environments/dev` |
 | `make tg-validate` / `./scripts/tg.sh validate-all` | `terragrunt run-all validate` |
 | `make tg-plan` / `./scripts/tg.sh plan-all` | `terragrunt run-all plan` |
 | `make tg-apply` / `./scripts/tg.sh apply-all` | `terragrunt run-all apply` (runs `env-check` first) |
 | `make tg-graph` / `./scripts/tg.sh graph` | Print `terragrunt graph-dependencies` (DOT) |
 | `./scripts/tg.sh graph-mermaid` | Print a Mermaid diagram of the same graph (for docs / viewers) |
 | `./scripts/tg.sh env-check` | Verify `TF_VAR_do_token` / `DO_TOKEN` and `TF_VAR_argocd_admin_password_hash` are set |
-| `make tg-fmt` | `terraform fmt` on `modules/` + `terraform/`, `terragrunt hclfmt` on `live/dev` |
+| `make tg-fmt` | `terraform fmt` on `modules/` + `terraform/`, `terragrunt hclfmt` on `environments/dev` |
 
 Pass extra flags through to Terragrunt after init-all, e.g. `./scripts/tg.sh init-all -reconfigure`.
 
@@ -134,16 +137,16 @@ From the repo root:
 set -a && source .env && set +a   # or export manually
 
 make tg-init        # or: ./scripts/tg.sh init-all
-make tg-plan        # or: cd live/dev && terragrunt run-all plan
+make tg-plan        # or: cd environments/dev && terragrunt run-all plan
 make tg-apply       # or: ./scripts/tg.sh apply-all
 ```
 
-Or `cd live/dev` and use `terragrunt run-all plan` / `apply` directly.
+Or `cd environments/dev` and use `terragrunt run-all plan` / `apply` directly.
 
 Single stack:
 
 ```bash
-cd live/dev/doks
+cd environments/dev/doks
 terragrunt plan
 terragrunt apply
 ```
@@ -156,7 +159,17 @@ make tg-fmt
 
 ## CI
 
-GitHub Actions (`.github/workflows/terraform.yml`) runs `terraform fmt`, `terragrunt hclfmt`, `terragrunt run-all validate`, `run-all plan`, and on **`main`** push `run-all apply`. Configure repository secrets **`DO_TOKEN`** and **`ARGOCD_ADMIN_PASSWORD_HASH`**. Remove or narrow the **`apply`** step if you do not want automatic applies from GitHub.
+GitHub Actions: **`fmt-validate.yml`** runs `terraform fmt`, `terragrunt hclfmt`, and `terragrunt run-all validate` on **every branch push** and on **pull requests**. **`terraform.yml`** runs `run-all plan` on **`main`** pushes and pull requests. Neither applies in CI.
+
+**Apply from CI (tag-based):** push an annotated tag whose name matches `deploy/**` (for example `deploy/20250421-143000`). Workflow **`.github/workflows/terragrunt-apply.yml`** runs `terragrunt run-all apply` in `environments/dev` only if the tagged commit is on **`main`**. Helper:
+
+```bash
+./scripts/tag-deploy.sh --help   # usage, examples
+./scripts/tag-deploy.sh          # creates deploy/<UTC timestamp>, pushes → apply in CI
+./scripts/tag-deploy.sh deploy/my-release
+```
+
+Configure repository secrets **`DO_TOKEN`** and **`ARGOCD_ADMIN_PASSWORD_HASH`** (and use a protected [environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment) if you want approvals). For local applies, use `make tg-apply` / `./scripts/tg.sh apply-all` as usual.
 
 ## Providers
 

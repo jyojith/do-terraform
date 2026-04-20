@@ -3,15 +3,16 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LIVE_DEV="${LIVE_DEV:-$ROOT/live/dev}"
+# Default stack dir; override with ENV_DEV, or legacy LIVE_DEV.
+ENV_DEV="${ENV_DEV:-${LIVE_DEV:-$ROOT/environments/dev}}"
 
 usage() {
   sed -n '1,80p' <<'EOF'
 Usage: ./scripts/tg.sh <command> [args...]
 
 Commands:
-  clean-cache     Remove all .terragrunt-cache directories under live/
-  init-all        terragrunt run-all init (from live/dev)
+  clean-cache     Remove all .terragrunt-cache directories under environments/
+  init-all        terragrunt run-all init (from environments/dev)
   validate-all    terragrunt run-all validate
   plan-all        terragrunt run-all plan
   apply-all       terragrunt run-all apply
@@ -21,7 +22,8 @@ Commands:
   env-load-help   Show how to load .env into your shell
 
 Environment:
-  LIVE_DEV        Override path to the stack dir (default: <repo>/live/dev)
+  ENV_DEV         Override path to the stack dir (default: <repo>/environments/dev)
+  LIVE_DEV        Deprecated alias for ENV_DEV (backward compatibility)
 
 Typical workflow:
   cp .env.example .env   # fill in secrets
@@ -37,18 +39,18 @@ clean_cache() {
   while IFS= read -r -d '' dir; do
     rm -rf "$dir"
     found=1
-  done < <(find "$ROOT/live" -name .terragrunt-cache -type d -print0 2>/dev/null || true)
+  done < <(find "$ROOT/environments" -name .terragrunt-cache -type d -print0 2>/dev/null || true)
   if [[ "$found" -eq 1 ]]; then
-    echo "Removed .terragrunt-cache under live/"
+    echo "Removed .terragrunt-cache under environments/"
   else
-    echo "No .terragrunt-cache directories found under live/"
+    echo "No .terragrunt-cache directories found under environments/"
   fi
 }
 
-run_in_live_dev() {
+run_in_env_dev() {
   local cmd="$1"
   shift
-  (cd "$LIVE_DEV" && terragrunt "run-all" "$cmd" --non-interactive "$@")
+  (cd "$ENV_DEV" && terragrunt "run-all" "$cmd" --non-interactive "$@")
 }
 
 env_check() {
@@ -92,23 +94,23 @@ case "${1:-}" in
     ;;
   init-all)
     shift || true
-    run_in_live_dev init "$@"
+    run_in_env_dev init "$@"
     ;;
   validate-all)
     shift || true
-    run_in_live_dev validate "$@"
+    run_in_env_dev validate "$@"
     ;;
   plan-all)
     shift || true
-    run_in_live_dev plan -input=false "$@"
+    run_in_env_dev plan -input=false "$@"
     ;;
   apply-all)
     shift || true
     env_check
-    run_in_live_dev apply -input=false -auto-approve "$@"
+    run_in_env_dev apply -input=false -auto-approve "$@"
     ;;
   graph)
-    (cd "$LIVE_DEV" && terragrunt graph-dependencies)
+    (cd "$ENV_DEV" && terragrunt graph-dependencies)
     ;;
   graph-mermaid)
     graph_mermaid

@@ -1,9 +1,10 @@
-name: Terragrunt
+# Runs terragrunt apply only when a deploy tag is pushed (see scripts/tag-deploy.sh).
+name: Terragrunt apply
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    tags:
+      - "deploy/**"
 
 permissions:
   contents: read
@@ -13,8 +14,8 @@ env:
   TF_VERSION: "1.9.0"
 
 jobs:
-  terragrunt:
-    name: Terragrunt (environments/dev)
+  apply:
+    name: Terragrunt apply (environments/dev)
     runs-on: ubuntu-latest
     environment: production
 
@@ -25,6 +26,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag points to a commit on main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"; then
+            echo "Refusing apply: tagged commit is not an ancestor of origin/main."
+            exit 1
+          fi
+          echo "Tagged commit ${GITHUB_SHA} is on main — proceeding."
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -40,10 +53,10 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
-      - name: Terragrunt run-all plan
+      - name: Terragrunt run-all apply
         working-directory: environments/dev
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           DO_TOKEN: ${{ secrets.DO_TOKEN }}
           TF_VAR_argocd_admin_password_hash: ${{ secrets.ARGOCD_ADMIN_PASSWORD_HASH }}
-        run: terragrunt run-all plan --non-interactive -input=false
+        run: terragrunt run-all apply --non-interactive -input=false -auto-approve
