@@ -10,9 +10,5 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.11"
     }
-    template = {
-      source  = "hashicorp/template"
-      version = ">= 2.2.0"
-    }
   }
 }
