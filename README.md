@@ -84,7 +84,7 @@ flowchart TD
 
 ### Implementation notes
 
-- Each `environments/dev/<stack>/terragrunt.hcl` **generates** a tiny `repo_paths.tf` (`local.repo_root = get_repo_root()`) so `${local.repo_root}/modules/...` resolves correctly after Terragrunt copies the stack into `.terragrunt-cache/`. Run stacks with **Terragrunt**, not raw `terraform` in `terraform/stacks/` alone, unless you add that file yourself for local experiments.
+- Each `environments/dev/<stack>/terragrunt.hcl` can **generate** `*.module.tf` with a **literal** absolute `module.source` (`get_repo_root()` at plan time) because Terraform does not allow `local` values in `module.source`. Run stacks with **Terragrunt**, not raw `terraform` in `terraform/stacks/` alone, or module sources will be missing.
 - Kubernetes-dependent stacks **generate** `providers.generated.tf` from **`dependency.doks.outputs`** (Helm uses the `kubernetes = { … }` map form required by **Helm provider v3**).
 - **Mock outputs** on the `doks` / `traefik` dependencies allow `validate` / `plan` when upstream state is empty (CI / cold start). Real applies use outputs from state after each dependency is applied.
 

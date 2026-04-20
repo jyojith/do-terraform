@@ -6,12 +6,19 @@ locals {
   env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 }
 
-generate "repo_paths" {
-  path      = "repo_paths.tf"
+generate "traefik_module" {
+  path      = "traefik.module.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
-locals {
-  repo_root = "${get_repo_root()}"
+module "traefik" {
+  source      = "${get_repo_root()}/modules/kubernetes/traefik"
+  domain_name = var.domain_name
+  email       = var.email
+  do_token    = var.do_token
+  providers = {
+    kubernetes     = kubernetes
+    kubernetes.k8s = kubernetes.k8s
+  }
 }
 EOF
 }

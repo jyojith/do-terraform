@@ -6,12 +6,20 @@ locals {
   env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 }
 
-generate "repo_paths" {
-  path      = "repo_paths.tf"
+generate "argocd_module" {
+  path      = "argocd.module.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
-locals {
-  repo_root = "${get_repo_root()}"
+module "argocd" {
+  source                     = "${get_repo_root()}/modules/kubernetes/argocd"
+  domain_name                = var.domain_name
+  repo_url                   = var.repo_url
+  branch                     = var.branch
+  manifests_path             = var.manifests_path
+  env                        = var.env
+  app_namespace              = var.app_namespace
+  argocd_namespace           = "argocd"
+  argocd_admin_password_hash = var.argocd_admin_password_hash
 }
 EOF
 }
