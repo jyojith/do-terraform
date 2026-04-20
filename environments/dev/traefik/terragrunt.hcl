@@ -37,35 +37,18 @@ terraform {
   source = "${get_repo_root()}/terraform/stacks/traefik"
 }
 
-generate "providers" {
+# Overwrite any cached providers.generated.tf from older Terragrunt; provider config lives in terraform/stacks/traefik/providers.tf.
+generate "providers_legacy_stub" {
   path      = "providers.generated.tf"
   if_exists = "overwrite_terragrunt"
-  contents  = <<-EOF
-provider "kubernetes" {
-  host                   = "${dependency.doks.outputs.endpoint}"
-  token                  = "${dependency.doks.outputs.token}"
-  cluster_ca_certificate = base64decode("${dependency.doks.outputs.cluster_ca_certificate}")
-}
-
-provider "kubernetes" {
-  alias                  = "k8s"
-  host                   = "${dependency.doks.outputs.endpoint}"
-  token                  = "${dependency.doks.outputs.token}"
-  cluster_ca_certificate = base64decode("${dependency.doks.outputs.cluster_ca_certificate}")
-}
-
-provider "helm" {
-  kubernetes = {
-    host                   = "${dependency.doks.outputs.endpoint}"
-    token                  = "${dependency.doks.outputs.token}"
-    cluster_ca_certificate = base64decode("${dependency.doks.outputs.cluster_ca_certificate}")
-  }
-}
-EOF
+  contents  = "# Superseded by providers.tf in the stack (inputs from Terragrunt).\n"
 }
 
 inputs = {
   domain_name = local.env.locals.domain_name
   email       = local.env.locals.email
   do_token    = length(trimspace(get_env("TF_VAR_do_token", ""))) > 0 ? get_env("TF_VAR_do_token", "") : get_env("DO_TOKEN", "")
+  k8s_host                   = dependency.doks.outputs.endpoint
+  k8s_token                  = dependency.doks.outputs.token
+  k8s_cluster_ca_certificate = dependency.doks.outputs.cluster_ca_certificate
 }
