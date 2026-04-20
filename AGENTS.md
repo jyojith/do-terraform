@@ -31,7 +31,7 @@ Check with: `cd environments/dev && terragrunt graph-dependencies` or `./scripts
 ## Commands agents should use
 
 - Validate all stacks:  
-  `cd environments/dev && export TF_VAR_do_token=… TF_VAR_argocd_admin_password_hash=… && terragrunt run-all validate --non-interactive`  
+  `cd environments/dev && export TF_VAR_do_token=… TF_VAR_argocd_admin_password_hash=… && terragrunt run-all validate`  
   (or `./scripts/tg.sh validate-all` with env set).
 - Format: `make tg-fmt` (Terraform + Terragrunt HCL).
 - Cache reset: `./scripts/tg.sh clean-cache` if module paths or generated files behave oddly after refactors.
