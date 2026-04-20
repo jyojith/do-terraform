@@ -50,12 +50,8 @@ clean_cache() {
 run_in_env_dev() {
   local cmd="$1"
   shift
-  # terraform validate does not accept -non-interactive; Terragrunt forwards it and Terraform errors.
-  if [[ "$cmd" == "validate" ]]; then
-    (cd "$ENV_DEV" && terragrunt "run-all" "$cmd" "$@")
-  else
-    (cd "$ENV_DEV" && terragrunt "run-all" "$cmd" --non-interactive "$@")
-  fi
+  # --non-interactive must be a Terragrunt global flag (before run-all); after run-all it is forwarded to Terraform, which rejects it for plan/validate/etc.
+  (cd "$ENV_DEV" && terragrunt --non-interactive run-all "$cmd" "$@")
 }
 
 env_check() {
