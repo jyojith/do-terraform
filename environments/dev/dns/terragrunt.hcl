@@ -6,12 +6,15 @@ locals {
   env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 }
 
-generate "repo_paths" {
-  path      = "repo_paths.tf"
+generate "network_module" {
+  path      = "network.module.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
-locals {
-  repo_root = "${get_repo_root()}"
+module "network" {
+  source        = "${get_repo_root()}/modules/digitalocean/network"
+  domain_name   = var.domain_name
+  region        = var.region
+  traefik_lb_ip = var.traefik_lb_ip
 }
 EOF
 }

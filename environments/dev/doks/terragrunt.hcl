@@ -6,14 +6,20 @@ locals {
   env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 }
 
-# Terragrunt copies the stack into .terragrunt-cache; relative module paths break.
-# This small generated file supplies repo root for ${local.repo_root} in terraform/stacks.
-generate "repo_paths" {
-  path      = "repo_paths.tf"
+# Terraform 1.4+ forbids locals in module source; Terragrunt expands get_repo_root() to a literal path.
+# Use bare var.x (not ${var.x}) so Terragrunt does not treat them as interpolations.
+generate "cluster_module" {
+  path      = "cluster.module.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
-locals {
-  repo_root = "${get_repo_root()}"
+module "cluster" {
+  source      = "${get_repo_root()}/modules/digitalocean/cluster"
+  do_token    = var.do_token
+  do_region   = var.do_region
+  name        = var.name
+  node_count  = var.node_count
+  node_size   = var.node_size
+  k8s_version = var.k8s_version
 }
 EOF
 }

@@ -11,9 +11,9 @@ Context for AI coding agents working in this repository.
 
 | Path | Role |
 |------|------|
-| `environments/dev/*/terragrunt.hcl` | Terragrunt only: `terraform { source = "${get_repo_root()}/terraform/stacks/..." }`, `dependency`, `inputs`, generated `repo_paths.tf` + `providers.generated.tf` |
+| `environments/dev/*/terragrunt.hcl` | Terragrunt only: `terraform { source = "${get_repo_root()}/terraform/stacks/..." }`, `dependency`, `inputs`, generated `*.module.tf` (literal module `source` paths) + `providers.generated.tf` where needed |
 | `terraform/stacks/<stack>/` | Terraform **root modules** (the `.tf` files). Referenced by Terragrunt; not duplicated under `environments/` |
-| `modules/` | Shared Terraform modules consumed by stacks (`${local.repo_root}/modules/...`) |
+| `modules/` | Shared Terraform modules consumed by stacks (paths expanded via Terragrunt `generate` because module `source` cannot use `local.*`) |
 | `k8s/apps/dev/` | Sample manifests; Argo CD sync path comes from `environments/dev/env.hcl` (`manifests_path`) |
 
 ## Dependency order
@@ -39,7 +39,7 @@ Check with: `cd environments/dev && terragrunt graph-dependencies` or `./scripts
 ## Conventions when editing
 
 - **Helm provider v3** uses `kubernetes = { ... }` (map), not a nested `kubernetes { }` block in generated providers.
-- **Terragrunt cache**: stacks use generated `repo_paths.tf` with `get_repo_root()` so `${local.repo_root}/modules/...` works under `.terragrunt-cache/`.
+- **Terragrunt cache**: child modules use `generate` blocks that write absolute `source` paths (`get_repo_root()/modules/...`); Terraform forbids `local`/variable interpolation in `module.source`.
 - **App TLS**: use Traefik annotations (e.g. `traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt`); do not reference removed cert-manager secrets.
 - Prefer **minimal, focused diffs**; match existing naming and structure in `modules/` and `terraform/stacks/`.
 - **Do not commit** `.env`, `.terragrunt-cache`, or `terraform.tfstate*`.
