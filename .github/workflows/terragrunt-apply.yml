@@ -24,10 +24,16 @@ jobs:
         shell: bash
 
     steps:
+      # Inline (not ci-checkout.sh): first step has no repo yet, so script file is missing.
       - name: Checkout
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash .github/scripts/ci-checkout.sh full
+        run: |
+          set -euo pipefail
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          cd "${GITHUB_WORKSPACE}"
+          git clone "${REPO_URL}" .
+          git checkout "${GITHUB_SHA}"
 
       - name: Verify tag points to a commit on main
         run: |

@@ -72,7 +72,7 @@ flowchart TD
 │   └── kubernetes/{traefik,argocd}
 ├── k8s/apps/dev/                # Sample manifests; path used by Argo CD
 └── .github/
-    ├── scripts/                 # checkout + terraform install (no actions/checkout)
+    ├── scripts/                 # terraform install; checkout logic is inlined in workflows
     └── workflows/
         ├── fmt-validate.yml         # on every push + PRs: fmt, hclfmt, validate
         ├── terraform.yml             # main + PRs: plan only (no apply)
@@ -161,7 +161,7 @@ make tg-fmt
 
 ## CI
 
-Workflows do **not** use third-party Actions (for example `actions/checkout` or `hashicorp/setup-terraform`), so they still run under org policies that only allow Actions from your own org. Checkout and Terraform install use **`.github/scripts/`**; Terragrunt is installed with **`curl`** from its release binary.
+Workflows do **not** use third-party Actions (for example `actions/checkout` or `hashicorp/setup-terraform`), so they still run under org policies that only allow Actions from your own org. The first step **must** clone via inline shell (no repo file yet); Terraform install uses **`.github/scripts/ci-install-terraform.sh`** after that. Terragrunt is installed with **`curl`** from its release binary. **`.github/scripts/ci-checkout.sh`** mirrors the clone logic for local testing only.
 
 GitHub Actions: **`fmt-validate.yml`** runs `terraform fmt`, `terragrunt hclfmt`, and `terragrunt run-all validate` on **every branch push** and on **pull requests**. **`terraform.yml`** runs `run-all plan` on **`main`** pushes and pull requests. Neither applies in CI.
 

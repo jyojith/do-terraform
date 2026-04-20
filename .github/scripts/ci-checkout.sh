@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Checkout the repo without actions/checkout (for orgs that allow only self-owned actions).
-# Usage: ci-checkout.sh <shallow|full>
+# Mirror of the inline "Checkout" step in .github/workflows/*.yml
+# Do not call this as the first CI step — the repo is not checked out yet.
+# Use for local testing: GITHUB_WORKSPACE=$PWD GITHUB_REPOSITORY=owner/repo GITHUB_SHA=… bash ci-checkout.sh shallow
 set -euo pipefail
 
 MODE="${1:?usage: ci-checkout.sh <shallow|full>}"
