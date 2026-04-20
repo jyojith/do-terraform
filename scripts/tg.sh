@@ -50,8 +50,8 @@ clean_cache() {
 run_in_env_dev() {
   local cmd="$1"
   shift
-  # --non-interactive must be a Terragrunt global flag (before run-all); after run-all it is forwarded to Terraform, which rejects it for plan/validate/etc.
-  (cd "$ENV_DEV" && terragrunt --non-interactive run-all "$cmd" "$@")
+  # Terragrunt v0.67 (CI pin) does not support `terragrunt --non-interactive run-all ...` (breaks with empty Terraform command). After run-all, --non-interactive is forwarded to Terraform and breaks plan/validate. Use TG_NON_INTERACTIVE instead.
+  (cd "$ENV_DEV" && TG_NON_INTERACTIVE=true terragrunt run-all "$cmd" "$@")
 }
 
 env_check() {
