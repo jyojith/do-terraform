@@ -71,10 +71,12 @@ flowchart TD
 │   ├── digitalocean/network
 │   └── kubernetes/{traefik,argocd}
 ├── k8s/apps/dev/                # Sample manifests; path used by Argo CD
-└── .github/workflows/
-    ├── fmt-validate.yml              # on every push + PRs: fmt, hclfmt, validate
-    ├── terraform.yml                 # main + PRs: plan only (no apply)
-    └── terragrunt-apply.yml          # deploy/** tags: apply
+└── .github/
+    ├── scripts/                 # checkout + terraform install (no actions/checkout)
+    └── workflows/
+        ├── fmt-validate.yml         # on every push + PRs: fmt, hclfmt, validate
+        ├── terraform.yml             # main + PRs: plan only (no apply)
+        └── terragrunt-apply.yml      # deploy/** tags: apply
 ```
 
 **Why split `environments/` vs `terraform/stacks/`?**  
@@ -158,6 +160,8 @@ make tg-fmt
 ```
 
 ## CI
+
+Workflows do **not** use third-party Actions (for example `actions/checkout` or `hashicorp/setup-terraform`), so they still run under org policies that only allow Actions from your own org. Checkout and Terraform install use **`.github/scripts/`**; Terragrunt is installed with **`curl`** from its release binary.
 
 GitHub Actions: **`fmt-validate.yml`** runs `terraform fmt`, `terragrunt hclfmt`, and `terragrunt run-all validate` on **every branch push** and on **pull requests**. **`terraform.yml`** runs `run-all plan` on **`main`** pushes and pull requests. Neither applies in CI.
 

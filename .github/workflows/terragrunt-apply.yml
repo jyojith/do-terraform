@@ -25,9 +25,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/ci-checkout.sh full
 
       - name: Verify tag points to a commit on main
         run: |
@@ -39,11 +39,10 @@ jobs:
           fi
           echo "Tagged commit ${GITHUB_SHA} is on main — proceeding."
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
+      - name: Install Terraform
+        env:
+          TF_VERSION: ${{ env.TF_VERSION }}
+        run: bash .github/scripts/ci-install-terraform.sh
 
       - name: Install Terragrunt
         run: |
