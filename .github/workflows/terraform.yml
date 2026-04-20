@@ -24,13 +24,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
+        run: bash .github/scripts/ci-checkout.sh shallow
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
+      - name: Install Terraform
+        env:
+          TF_VERSION: ${{ env.TF_VERSION }}
+        run: bash .github/scripts/ci-install-terraform.sh
 
       - name: Install Terragrunt
         run: |
