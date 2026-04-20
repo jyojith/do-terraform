@@ -1,11 +1,3 @@
-data "kubernetes_service" "traefik_lb" {
-  provider = kubernetes.k8s
-  metadata {
-    name      = "traefik"
-    namespace = "traefik"
-  }
-}
-
 resource "digitalocean_record" "root_domain" {
   domain = var.domain_name
   type   = "A"
