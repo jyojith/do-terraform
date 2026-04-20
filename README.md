@@ -1,6 +1,6 @@
 # DigitalOcean Kubernetes (DOKS) — Terragrunt + Terraform
 
-This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supporting pieces: **project + domain**, **cert-manager** (Let’s Encrypt DNS-01), **Traefik** ingress, **DNS A records**, and **Argo CD** GitOps. Infrastructure is split into **Terragrunt stacks** under `live/dev/` with separate state per stack, explicit **dependencies**, and **DRY** shared config.
+This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supporting pieces: **project + domain**, **Traefik** ingress with **built-in ACME** (Let’s Encrypt DNS-01 via DigitalOcean), **DNS A records**, and **Argo CD** GitOps. Infrastructure is split into **Terragrunt stacks** under `live/dev/` with separate state per stack, explicit **dependencies**, and **DRY** shared config.
 
 ## Why Terragrunt?
 
@@ -10,41 +10,66 @@ This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supp
 
 ## Stack layout and dependency graph
 
-Execution order for `terragrunt run-all apply` (from `live/dev/`):
+Terragrunt resolves dependencies from `live/dev/*/terragrunt.hcl` (`dependency` and `dependencies` blocks). **Verified** with `terragrunt graph-dependencies` from `live/dev/` (also: `./scripts/tg.sh graph`):
 
-| Order | Stack          | Purpose |
-|-------|----------------|---------|
-| 1     | `doks`         | DO project, domain, DOKS cluster, project↔resource attachment |
-| 2     | `cert-manager` | cert-manager Helm, DO DNS secret, ClusterIssuer, wildcard cert |
-| 2     | `traefik`      | Traefik Helm (LoadBalancer), dashboard `IngressRoute` |
-| 3     | `dns`          | DO DNS A records → Traefik LB IP |
-| 4     | `argocd`       | Argo CD + `argocd-apps` Application |
+```dot
+digraph {
+	"argocd" -> "traefik";
+	"argocd" -> "dns";
+	"argocd" -> "doks";
+	"dns" -> "traefik";
+	"traefik" -> "doks";
+}
+```
 
-`cert-manager` and `traefik` both depend only on `doks` and can run in parallel. `dns` depends on `traefik` (needs LB IP). `argocd` depends on `doks` (Helm kube config) and is ordered after `cert-manager`, `traefik`, and `dns`.
+| Stack | Depends on | Purpose |
+|-------|------------|---------|
+| `doks` | — | DO project, domain, DOKS cluster, project↔resource attachment |
+| `traefik` | `doks` | Traefik Helm (LoadBalancer), **ACME `letsencrypt` resolver** (DNS-01, `DO_AUTH_TOKEN`), dashboard `IngressRoute` |
+| `dns` | `traefik` | DO DNS A records → Traefik LB IP |
+| `argocd` | `doks`, `traefik`, `dns` | Argo CD + `argocd-apps` Application (`dependency` on `doks` for Helm kube config; `dependencies` so it runs after Traefik + DNS) |
+
+**Apply order:** `terragrunt run-all apply` runs **`doks`** → **`traefik`** → **`dns`** → **`argocd`**.
+
+**TLS:** Certificates are issued by **Traefik’s ACME** (certificate resolver `letsencrypt`), not cert-manager. The same DigitalOcean API token is stored in a Kubernetes secret and exposed to Traefik as **`DO_AUTH_TOKEN`** for the DNS challenge. Use Ingress / IngressRoute annotations such as `traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt` for app hosts (see `k8s/apps/dev/loading-page/ingress.yaml`).
+
+```mermaid
+flowchart TD
+  doks["doks"]
+  traefik["traefik"]
+  dns["dns"]
+  argo["argocd"]
+  traefik --> doks
+  dns --> traefik
+  argo --> doks
+  argo --> traefik
+  argo --> dns
+```
 
 ## Repository layout
 
 ```
 .
+├── Makefile                     # Shortcuts: tg-clean, tg-init, tg-plan, …
+├── scripts/tg.sh                # Terragrunt helpers (cache, run-all, graph, env-check)
+├── .env.example                 # Template for TF_VAR_* — copy to .env (gitignored)
 ├── live/
 │   ├── root.hcl                 # Shared remote_state (local backend path per stack)
 │   └── dev/
-│       ├── env.hcl              # Non-secret locals (region, cluster size, domain, Git URLs, …)
+│       ├── env.hcl              # Non-secret locals (region, cluster size, domain, email, …)
 │       ├── doks/terragrunt.hcl  # Only Terragrunt: inputs + terraform { source = … }
-│       ├── cert-manager/
 │       ├── traefik/
 │       ├── dns/
 │       └── argocd/
 ├── terraform/stacks/            # Terraform root modules (one directory per stack)
 │   ├── doks/
-│   ├── cert-manager/
 │   ├── traefik/
 │   ├── dns/
 │   └── argocd/
 ├── modules/                     # Shared modules called from terraform/stacks/*
 │   ├── digitalocean/cluster
 │   ├── digitalocean/network
-│   └── kubernetes/{cert_manager,traefik,argocd}
+│   └── kubernetes/{traefik,argocd}
 ├── k8s/apps/dev/                # Sample manifests; path used by Argo CD
 └── .github/workflows/terraform.yml   # terragrunt run-all validate/plan/apply
 ```
@@ -66,8 +91,7 @@ Execution order for `terragrunt run-all apply` (from `live/dev/`):
 
 - [Terraform](https://www.terraform.io/) **>= 1.5** (or compatible OpenTofu)
 - [Terragrunt](https://terragrunt.gruntwork.io/) (see `TG_VERSION` in `.github/workflows/terraform.yml` for the CI pin)
-- `kubectl` on the machine that runs apply (cert-manager module waits for CRDs via `kubectl`)
-- DigitalOcean API token with permissions for Kubernetes, DNS, and project resources
+- DigitalOcean API token with permissions for Kubernetes, DNS (for ACME DNS-01), and project resources
 
 ## Configure secrets
 
@@ -75,22 +99,46 @@ Export (or use a private `*.auto.tfvars` / CI secrets):
 
 | Variable | Purpose |
 |----------|---------|
-| `TF_VAR_do_token` or `DO_TOKEN` | DigitalOcean API token |
+| `TF_VAR_do_token` or `DO_TOKEN` | DigitalOcean API token (provider + **Traefik ACME DNS challenge**) |
 | `TF_VAR_argocd_admin_password_hash` | Bcrypt hash for Argo CD `admin` |
+
+`live/dev/env.hcl` sets **`email`** for ACME registration (non-secret).
+
+Local file (recommended): copy **`.env.example`** to **`.env`** in the repo root (`.env` is gitignored), then:
+
+```bash
+set -a && source .env && set +a
+```
+
+## Helpers (Makefile and `scripts/tg.sh`)
+
+| Command | What it does |
+|---------|----------------|
+| `make tg-clean` / `./scripts/tg.sh clean-cache` | Delete all `live/**/.terragrunt-cache` directories (forces a fresh module copy on next run) |
+| `make tg-init` / `./scripts/tg.sh init-all` | `terragrunt run-all init` from `live/dev` |
+| `make tg-validate` / `./scripts/tg.sh validate-all` | `terragrunt run-all validate` |
+| `make tg-plan` / `./scripts/tg.sh plan-all` | `terragrunt run-all plan` |
+| `make tg-apply` / `./scripts/tg.sh apply-all` | `terragrunt run-all apply` (runs `env-check` first) |
+| `make tg-graph` / `./scripts/tg.sh graph` | Print `terragrunt graph-dependencies` (DOT) |
+| `./scripts/tg.sh graph-mermaid` | Print a Mermaid diagram of the same graph (for docs / viewers) |
+| `./scripts/tg.sh env-check` | Verify `TF_VAR_do_token` / `DO_TOKEN` and `TF_VAR_argocd_admin_password_hash` are set |
+| `make tg-fmt` | `terraform fmt` on `modules/` + `terraform/`, `terragrunt hclfmt` on `live/dev` |
+
+Pass extra flags through to Terragrunt after init-all, e.g. `./scripts/tg.sh init-all -reconfigure`.
 
 ## Usage
 
 From the repo root:
 
 ```bash
-cd live/dev
+set -a && source .env && set +a   # or export manually
 
-export TF_VAR_do_token="dop_v1_..."   # or export DO_TOKEN="..."
-export TF_VAR_argocd_admin_password_hash='$2a$10$...'
-
-terragrunt run-all plan
-terragrunt run-all apply
+make tg-init        # or: ./scripts/tg.sh init-all
+make tg-plan        # or: cd live/dev && terragrunt run-all plan
+make tg-apply       # or: ./scripts/tg.sh apply-all
 ```
+
+Or `cd live/dev` and use `terragrunt run-all plan` / `apply` directly.
 
 Single stack:
 
@@ -103,8 +151,7 @@ terragrunt apply
 Formatting:
 
 ```bash
-terraform fmt -recursive ../../modules ../../terraform/stacks
-terragrunt hclfmt --working-dir=.
+make tg-fmt
 ```
 
 ## CI
@@ -113,4 +160,4 @@ GitHub Actions (`.github/workflows/terraform.yml`) runs `terraform fmt`, `terrag
 
 ## Providers
 
-Stacks pin **DigitalOcean**, **Kubernetes**, **Helm**, and **template** (Traefik values) where needed; versions are resolved per stack’s `versions.tf` and lock files created after `terragrunt init`.
+Stacks pin **DigitalOcean**, **Kubernetes**, **Helm**, and **template** (Traefik Helm values template) where needed; versions are resolved per stack’s `versions.tf` and lock files created after `terragrunt init`.

@@ -37,6 +37,35 @@ service:
   spec:
     type: LoadBalancer
 
+# ACME / Let's Encrypt storage (lego)
+persistence:
+  enabled: true
+  path: /data
+  size: 128Mi
+
+certResolvers:
+  letsencrypt:
+    email: ${email}
+    storage: /data/acme.json
+    dnsChallenge:
+      provider: digitalocean
+      delayBeforeCheck: 30
+
+env:
+  - name: POD_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  - name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: DO_AUTH_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: traefik-do-dns
+        key: access-token
+
 additionalArguments:
   - "--entrypoints.web.address=:8000"
   - "--entrypoints.websecure.address=:8443"
@@ -49,13 +78,8 @@ additionalArguments:
   - "--providers.kubernetescrd=true"
   - "--entrypoints.traefik.http.tls=true"
 
-tlsStore:
-  default:
-    defaultCertificate:
-      secretName: ${tls_secret_name}
-
 extraObjects:
-  - apiVersion: traefik.containo.us/v1alpha1
+  - apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:
       name: traefik-dashboard
@@ -72,4 +96,9 @@ extraObjects:
           services:
             - name: api@internal
               kind: TraefikService
-      tls: {}
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: '*.${domain_name}'
+            sans:
+              - '${domain_name}'

@@ -58,6 +58,7 @@ EOF
 }
 
 inputs = {
-  domain_name     = local.env.locals.domain_name
-  tls_secret_name = local.env.locals.tls_secret_name
+  domain_name = local.env.locals.domain_name
+  email       = local.env.locals.email
+  do_token    = length(trimspace(get_env("TF_VAR_do_token", ""))) > 0 ? get_env("TF_VAR_do_token", "") : get_env("DO_TOKEN", "")
 }
