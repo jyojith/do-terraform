@@ -1,6 +1,6 @@
 # Terragrunt helpers — requires terragrunt + terraform on PATH
 TG_SCRIPT := ./scripts/tg.sh
-LIVE_DEV  := live/dev
+ENV_DEV  := environments/dev
 
 .PHONY: help tg-clean tg-init tg-validate tg-plan tg-apply tg-graph tg-env-check tg-fmt
 
@@ -28,7 +28,7 @@ tg-graph:
 tg-env-check:
 	@$(TG_SCRIPT) env-check
 
-# Format Terraform modules, stacks, and Terragrunt HCL under live/dev
+# Format Terraform modules, stacks, and Terragrunt HCL under environments/dev
 tg-fmt:
 	terraform fmt -recursive modules terraform
-	terragrunt hclfmt --working-dir=$(LIVE_DEV)
+	terragrunt hclfmt --working-dir=$(ENV_DEV)
