@@ -58,6 +58,56 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
+      - name: Import existing DOKS cluster into state (if present)
+        working-directory: environments/dev/doks
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          DO_TOKEN: ${{ secrets.DO_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          CLUSTER_NAME="$(python3 - <<'PY'
+import re
+from pathlib import Path
+
+text = Path("../env.hcl").read_text()
+m = re.search(r'^\s*name\s*=\s*"([^"]+)"', text, re.MULTILINE)
+if not m:
+    raise SystemExit("Could not find cluster name in environments/dev/env.hcl")
+print(m.group(1))
+PY
+)"
+
+          CLUSTER_ID="$(CLUSTER_NAME="${CLUSTER_NAME}" python3 - <<'PY'
+import json
+import os
+import urllib.request
+
+token = os.environ["DO_TOKEN"]
+req = urllib.request.Request(
+    "https://api.digitalocean.com/v2/kubernetes/clusters",
+    headers={"Authorization": f"Bearer {token}"},
+)
+with urllib.request.urlopen(req) as resp:
+    data = json.load(resp)
+
+target = os.environ["CLUSTER_NAME"]
+for c in data.get("kubernetes_clusters", []):
+    if c.get("name") == target:
+        print(c.get("id", ""))
+        break
+else:
+    print("")
+PY
+)"
+
+          if [[ -n "${CLUSTER_ID}" ]]; then
+            echo "Found existing cluster ${CLUSTER_NAME} (${CLUSTER_ID}); importing into state."
+            terragrunt import -input=false module.cluster.digitalocean_kubernetes_cluster.main "${CLUSTER_ID}" || true
+          else
+            echo "No existing cluster named ${CLUSTER_NAME}; apply will create it."
+          fi
+
       - name: Terragrunt run-all apply
         working-directory: environments/dev
         env:
