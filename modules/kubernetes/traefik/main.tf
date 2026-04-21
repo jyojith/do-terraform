@@ -8,33 +8,51 @@ terraform {
   }
 }
 
-data "template_file" "traefik_values" {
-  template = file("${path.module}/values.yaml.tpl")
-
-  vars = {
-    domain_name     = var.domain_name
-    tls_secret_name = var.tls_secret_name
+resource "kubernetes_namespace_v1" "traefik" {
+  metadata {
+    name = "traefik"
   }
 }
 
-resource "helm_release" "traefik" {
-  name       = "traefik"
-  namespace  = "traefik"
-  chart      = "traefik"
-  version    = "25.0.0"
-  repository = "https://helm.traefik.io/traefik"
-  timeout    = 300
+resource "kubernetes_secret_v1" "do_dns" {
+  metadata {
+    name      = "traefik-do-dns"
+    namespace = kubernetes_namespace_v1.traefik.metadata[0].name
+  }
 
-  create_namespace = true
+  data = {
+    "access-token" = base64encode(var.do_token)
+  }
 
-  values = [data.template_file.traefik_values.rendered]
+  type = "Opaque"
 }
 
-data "kubernetes_service" "traefik_lb" {
+locals {
+  traefik_values = templatefile("${path.module}/values.yaml.tpl", {
+    domain_name = var.domain_name
+    email       = var.email
+  })
+}
+
+resource "helm_release" "traefik" {
+  name             = "traefik"
+  namespace        = kubernetes_namespace_v1.traefik.metadata[0].name
+  chart            = "traefik"
+  version          = "25.0.0"
+  repository       = "https://helm.traefik.io/traefik"
+  timeout          = 300
+  create_namespace = false
+
+  values = [local.traefik_values]
+
+  depends_on = [kubernetes_secret_v1.do_dns]
+}
+
+data "kubernetes_service_v1" "traefik_lb" {
   provider = kubernetes.k8s
   metadata {
     name      = "traefik"
-    namespace = "traefik"
+    namespace = kubernetes_namespace_v1.traefik.metadata[0].name
   }
 
   depends_on = [helm_release.traefik]

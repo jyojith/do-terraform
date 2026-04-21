@@ -1,4 +1,6 @@
 .terraform
+.terragrunt-cache
 .terraform.lock.hcl
 local-keys
 terraform.tfstate*
+.env

@@ -3,8 +3,12 @@ kind: Ingress
 metadata:
   name: loading-page-ingress
   namespace: loading-page
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
-  ingressClassName: kong
+  ingressClassName: traefik
   rules:
     - host: bizquery.dev
       http:
@@ -16,7 +20,3 @@ spec:
                 name: loading-page-service
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - bizquery.dev
-      secretName: bizquery-wildcard-tls
