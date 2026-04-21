@@ -47,6 +47,7 @@ certResolvers:
   letsencrypt:
     email: ${email}
     storage: /data/acme.json
+    caServer: https://acme-staging-v02.api.letsencrypt.org/directory
     dnsChallenge:
       provider: digitalocean
       delayBeforeCheck: 30
@@ -70,6 +71,8 @@ additionalArguments:
   - "--entrypoints.web.address=:8000"
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
+  - "--ping=true"
+  - "--ping.entrypoint=traefik"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
