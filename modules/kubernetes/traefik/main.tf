@@ -42,6 +42,7 @@ resource "helm_release" "traefik" {
   repository       = "https://helm.traefik.io/traefik"
   timeout          = 300
   create_namespace = false
+  take_ownership   = true
 
   values = [local.traefik_values]
 
