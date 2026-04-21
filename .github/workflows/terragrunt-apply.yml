@@ -86,6 +86,17 @@ jobs:
             echo "No existing cluster named ${CLUSTER_NAME}; apply will create it."
           fi
 
+      - name: Import existing Traefik resources into state (if present)
+        working-directory: environments/dev/traefik
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          DO_TOKEN: ${{ secrets.DO_TOKEN }}
+        run: |
+          set -euo pipefail
+          terragrunt import -input=false module.traefik.kubernetes_namespace_v1.traefik traefik || true
+          terragrunt import -input=false module.traefik.kubernetes_secret_v1.do_dns traefik/traefik-do-dns || true
+          terragrunt import -input=false module.traefik.helm_release.traefik traefik/traefik || true
+
       - name: Terragrunt run-all apply
         working-directory: environments/dev
         env:
