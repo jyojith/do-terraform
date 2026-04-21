@@ -4,19 +4,24 @@
 # Remote state: S3-compatible (e.g. DigitalOcean Spaces) when AWS_* + TG_STATE_* are set.
 # Otherwise "local" backend for fmt/validate CI without Spaces.
 #
-# Important: Terragrunt's remote_state S3 config decoder coerces boolean HCL values to the
-# string "true" in several cases (ternary/merge). Use only string fields here; OpenTofu/Terraform
-# S3 backend defaults + AWS_* env vars are enough for Spaces in practice.
+# For DigitalOcean Spaces, TG_STATE_REGION is the *Spaces datacenter* (e.g. fra1) in the endpoint
+# URL. The S3 backend "region" must be a *valid AWS region name* (e.g. us-east-1) for SigV4/STS;
+# otherwise the SDK looks up sts.<region>.amazonaws.com and fails (e.g. sts.fra1.amazonaws.com).
+# See: https://docs.digitalocean.com/reference/terraform/backend/
+#
+# Terragrunt: avoid boolean flags in remote_state config (decode coerces to string "true").
+# Use string fields; optional TG_S3_REGION overrides the signing region.
 
 terraform_version_constraint = ">= 1.5.0"
 
 locals {
   state_bucket   = get_env("TG_STATE_BUCKET", "")
-  state_region   = get_env("TG_STATE_REGION", "fra1")
   state_endpoint = get_env("TG_STATE_ENDPOINT", "")
-  has_aws        = length(trimspace(get_env("AWS_ACCESS_KEY_ID", ""))) > 0 && length(trimspace(get_env("AWS_SECRET_ACCESS_KEY", ""))) > 0
-  has_s3_target  = length(trimspace(local.state_bucket)) > 0 && length(trimspace(local.state_endpoint)) > 0
-  use_s3         = local.has_aws && local.has_s3_target
+  # AWS SigV4 signing region for the S3 backend (must be a real AWS region, not a DO slug like fra1).
+  s3_signing_region = get_env("TG_S3_REGION", "us-east-1")
+  has_aws           = length(trimspace(get_env("AWS_ACCESS_KEY_ID", ""))) > 0 && length(trimspace(get_env("AWS_SECRET_ACCESS_KEY", ""))) > 0
+  has_s3_target     = length(trimspace(local.state_bucket)) > 0 && length(trimspace(local.state_endpoint)) > 0
+  use_s3            = local.has_aws && local.has_s3_target
 }
 
 remote_state {
@@ -25,7 +30,7 @@ remote_state {
   config = local.use_s3 ? {
     bucket   = local.state_bucket
     key      = "${path_relative_to_include()}/terraform.tfstate"
-    region   = local.state_region
+    region   = local.s3_signing_region
     endpoint = local.state_endpoint
   } : {
     path = "${get_terragrunt_dir()}/terraform.tfstate"
