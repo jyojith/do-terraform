@@ -33,9 +33,15 @@ ingressRoute:
   dashboard:
     enabled: false
 
+# Chart expects service.type / service.annotations (not service.spec.type).
 service:
-  spec:
-    type: LoadBalancer
+  type: LoadBalancer
+  annotations:
+    # Default DO LB health check is tcp or http to "/"; without override, probes can miss Traefik's /ping.
+    service.beta.kubernetes.io/do-loadbalancer-override-health-check: "true"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "80"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/ping"
 
 # ACME / Let's Encrypt storage (lego)
 persistence:
@@ -78,8 +84,7 @@ additionalArguments:
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
   - "--ping=true"
-  # Manual routing: expose ping on web + websecure (DO LB often health-checks :443; built-in ping is single entrypoint only)
-  - "--ping.manualrouting=true"
+  - "--ping.entryPoint=web"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
@@ -89,38 +94,6 @@ additionalArguments:
   - "--entrypoints.traefik.http.tls=true"
 
 extraObjects:
-  - apiVersion: traefik.io/v1alpha1
-    kind: IngressRoute
-    metadata:
-      name: traefik-ping-web
-      namespace: traefik
-    spec:
-      entryPoints:
-        - web
-      routes:
-        - match: PathPrefix(`/ping`)
-          kind: Rule
-          priority: 2147483647
-          services:
-            - name: ping@internal
-              kind: TraefikService
-  - apiVersion: traefik.io/v1alpha1
-    kind: IngressRoute
-    metadata:
-      name: traefik-ping-websecure
-      namespace: traefik
-    spec:
-      entryPoints:
-        - websecure
-      routes:
-        - match: PathPrefix(`/ping`)
-          kind: Rule
-          priority: 2147483647
-          services:
-            - name: ping@internal
-              kind: TraefikService
-      # Required for HTTPS entrypoint; default cert is fine for LB probes
-      tls: {}
   - apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:
