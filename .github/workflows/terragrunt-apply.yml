@@ -22,9 +22,11 @@ jobs:
 
     # S3/Spaces remote state: Terragrunt needs AWS env vars in every step that runs tofu (including doks in run-all).
     # Support either naming convention (env AWS_* or legacy TG_STATE_*).
+    # No session token: DO Spaces keys are static; a stray session token would break signing.
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID || secrets.TG_STATE_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || secrets.TG_STATE_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ""
       AWS_EC2_METADATA_DISABLED: "true"
 
     defaults:
@@ -67,6 +69,9 @@ jobs:
           terragrunt --version
 
       - name: Verify Spaces / S3 state credentials
+        env:
+          TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
+          TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
         run: |
           set -euo pipefail
           if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
@@ -76,6 +81,14 @@ jobs:
             exit 1
           fi
           echo "AWS credentials for remote state are set (length: ${#AWS_ACCESS_KEY_ID} / ${#AWS_SECRET_ACCESS_KEY})"
+          if [ -n "${TG_STATE_BUCKET:-}" ] && [ -z "${TG_STATE_ENDPOINT:-}" ]; then
+            echo "TG_STATE_BUCKET is set but TG_STATE_ENDPOINT is empty."
+            echo "Set environment variable TG_STATE_ENDPOINT (e.g. https://fra1.digitaloceanspaces.com) on the production environment."
+            exit 1
+          fi
+          if [ -n "${TG_STATE_ENDPOINT:-}" ]; then
+            echo "Remote state: bucket=${TG_STATE_BUCKET:-<unset>}, endpoint (host only): ${TG_STATE_ENDPOINT#*://}"
+          fi
 
       - name: Import existing DOKS cluster into state (if present)
         working-directory: environments/dev/doks
@@ -121,6 +134,17 @@ jobs:
           terragrunt import -input=false module.traefik.kubernetes_namespace_v1.traefik traefik || true
           terragrunt import -input=false module.traefik.kubernetes_secret_v1.do_dns traefik/traefik-do-dns || true
           terragrunt import -input=false module.traefik.helm_release.traefik traefik/traefik || true
+
+      - name: Terragrunt run-all init
+        working-directory: environments/dev
+        env:
+          TG_NON_INTERACTIVE: "true"
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          DO_TOKEN: ${{ secrets.DO_TOKEN }}
+          TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
+          TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
+          TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
+        run: terragrunt run-all init -reconfigure -input=false --terragrunt-non-interactive
 
       - name: Terragrunt run-all apply
         working-directory: environments/dev
