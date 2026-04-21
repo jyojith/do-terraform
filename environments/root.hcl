@@ -21,6 +21,15 @@ remote_state {
     skip_requesting_account_id  = true
     skip_metadata_api_check     = true
     skip_region_validation      = true
+
+    # DigitalOcean Spaces is S3-compatible but doesn't expose all AWS bucket controls
+    # Terragrunt tries to verify/manage (SSE/versioning/etc) by default and can fail with 403.
+    skip_bucket_versioning  = true
+    skip_bucket_ssencryption = true
+    skip_bucket_accesslogging = true
+    skip_bucket_root_access = true
+    skip_bucket_enforced_tls = true
+    skip_bucket_public_access_blocking = true
   }
   generate = {
     path      = "backend.tf"
