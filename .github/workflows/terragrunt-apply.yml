@@ -1,9 +1,10 @@
-name: Terragrunt
+# Runs terragrunt apply only when a deploy tag is pushed (see scripts/tag-deploy.sh).
+name: Terragrunt apply
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    tags:
+      - "deploy/**"
 
 permissions:
   contents: read
@@ -13,8 +14,8 @@ env:
   TF_VERSION: "1.9.0"
 
 jobs:
-  terragrunt:
-    name: Terragrunt (environments/dev)
+  apply:
+    name: Terragrunt apply (environments/dev)
     runs-on: ubuntu-latest
     environment: production
 
@@ -27,26 +28,22 @@ jobs:
       - name: Checkout
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
         run: |
           set -euo pipefail
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           cd "${GITHUB_WORKSPACE}"
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            if [ -z "${PR_NUMBER:-}" ]; then
-              echo "PR_NUMBER is required for pull_request events" >&2
-              exit 1
-            fi
-            git init -q
-            git remote add origin "${REPO_URL}"
-            git fetch --depth=1 origin "refs/pull/${PR_NUMBER}/merge"
-            git checkout --detach FETCH_HEAD
-          else
-            git init -q
-            git remote add origin "${REPO_URL}"
-            git fetch --depth=1 origin "${GITHUB_SHA}"
-            git checkout --detach FETCH_HEAD
+          git clone "${REPO_URL}" .
+          git checkout "${GITHUB_SHA}"
+
+      - name: Verify tag points to a commit on main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"; then
+            echo "Refusing apply: tagged commit is not an ancestor of origin/main."
+            exit 1
           fi
+          echo "Tagged commit ${GITHUB_SHA} is on main — proceeding."
 
       - name: Install Terraform
         env:
@@ -61,11 +58,11 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
-      - name: Terragrunt run-all plan
+      - name: Terragrunt run-all apply
         working-directory: environments/dev
         env:
           TG_NON_INTERACTIVE: "true"
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           DO_TOKEN: ${{ secrets.DO_TOKEN }}
           TF_VAR_argocd_admin_password_hash: ${{ secrets.ARGOCD_ADMIN_PASSWORD_HASH }}
-        run: terragrunt run-all plan -input=false
+        run: terragrunt run-all apply -input=false -auto-approve
