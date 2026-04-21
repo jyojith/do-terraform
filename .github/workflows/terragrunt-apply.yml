@@ -67,8 +67,8 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
 
@@ -100,8 +100,8 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           terragrunt import -input=false module.traefik.kubernetes_namespace_v1.traefik traefik || true
@@ -118,6 +118,6 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: terragrunt run-all apply --terragrunt-non-interactive -input=false -auto-approve
