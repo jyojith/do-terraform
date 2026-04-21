@@ -4,8 +4,9 @@
 # Remote state: S3-compatible (e.g. DigitalOcean Spaces) when AWS_* + TG_STATE_* are set.
 # Otherwise "local" backend for fmt/validate CI without Spaces.
 #
-# S3 `config` must be built with merge() and inline bool literals. Terragrunt 0.67 coerces
-# booleans to strings when a map is selected via ternary (e.g. `? local.remote_s3`).
+# Important: Terragrunt's remote_state S3 config decoder coerces boolean HCL values to the
+# string "true" in several cases (ternary/merge). Use only string fields here; OpenTofu/Terraform
+# S3 backend defaults + AWS_* env vars are enough for Spaces in practice.
 
 terraform_version_constraint = ">= 1.5.0"
 
@@ -20,28 +21,13 @@ locals {
 
 remote_state {
   backend = local.use_s3 ? "s3" : "local"
-  config = local.use_s3 ? merge(
-    {
-      bucket   = local.state_bucket
-      key      = "${path_relative_to_include()}/terraform.tfstate"
-      region   = local.state_region
-      endpoint = local.state_endpoint
-    },
-    {
-      skip_credentials_validation = true
-      skip_requesting_account_id  = true
-      skip_metadata_api_check     = true
-      skip_region_validation      = true
-    },
-    {
-      skip_bucket_versioning             = true
-      skip_bucket_ssencryption           = true
-      skip_bucket_accesslogging          = true
-      skip_bucket_root_access            = true
-      skip_bucket_enforced_tls          = true
-      skip_bucket_public_access_blocking = true
-    }
-  ) : {
+  # String fields only — no booleans (avoids Terragrunt decoding "true" as string and failing).
+  config = local.use_s3 ? {
+    bucket   = local.state_bucket
+    key      = "${path_relative_to_include()}/terraform.tfstate"
+    region   = local.state_region
+    endpoint = local.state_endpoint
+  } : {
     path = "${get_terragrunt_dir()}/terraform.tfstate"
   }
   generate = {
