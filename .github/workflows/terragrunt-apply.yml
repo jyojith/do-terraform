@@ -20,6 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
 
+    # S3/Spaces remote state: Terragrunt needs AWS env vars in every step that runs tofu (including doks in run-all).
+    # Support either naming convention (env AWS_* or legacy TG_STATE_*).
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID || secrets.TG_STATE_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || secrets.TG_STATE_SECRET_ACCESS_KEY }}
+      AWS_EC2_METADATA_DISABLED: "true"
+
     defaults:
       run:
         shell: bash
@@ -59,6 +66,17 @@ jobs:
           sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
           terragrunt --version
 
+      - name: Verify Spaces / S3 state credentials
+        run: |
+          set -euo pipefail
+          if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
+            echo "Missing AWS credentials for remote state. Add repository or environment secrets:"
+            echo "  AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY"
+            echo "  (or as fallback: TG_STATE_ACCESS_KEY_ID / TG_STATE_SECRET_ACCESS_KEY)"
+            exit 1
+          fi
+          echo "AWS credentials for remote state are set (length: ${#AWS_ACCESS_KEY_ID} / ${#AWS_SECRET_ACCESS_KEY})"
+
       - name: Import existing DOKS cluster into state (if present)
         working-directory: environments/dev/doks
         env:
@@ -67,8 +85,6 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
 
@@ -100,8 +116,6 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           terragrunt import -input=false module.traefik.kubernetes_namespace_v1.traefik traefik || true
@@ -118,6 +132,4 @@ jobs:
           TG_STATE_BUCKET: ${{ vars.TG_STATE_BUCKET }}
           TG_STATE_REGION: ${{ vars.TG_STATE_REGION || env.TG_STATE_REGION_DEFAULT }}
           TG_STATE_ENDPOINT: ${{ vars.TG_STATE_ENDPOINT }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: terragrunt run-all apply --terragrunt-non-interactive -input=false -auto-approve
