@@ -90,6 +90,24 @@ jobs:
             echo "Remote state: bucket=${TG_STATE_BUCKET:-<unset>}, endpoint (host only): ${TG_STATE_ENDPOINT#*://}"
           fi
 
+      - name: Verify DigitalOcean API token (DOKS / ACME, not Spaces keys)
+        env:
+          DO_TOKEN: ${{ secrets.DO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DO_TOKEN:-}" ]; then
+            echo "DO_TOKEN is empty. Set the production environment secret to a v2 personal access token (dop_v1_...)."
+            exit 1
+          fi
+          code="$(curl -sS -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${DO_TOKEN}" https://api.digitalocean.com/v2/account)"
+          if [ "${code}" != "200" ]; then
+            echo "DigitalOcean API returned HTTP ${code} for GET /v2/account (expected 200)."
+            echo "Use a personal access token from https://cloud.digitalocean.com/account/api/tokens for DO_TOKEN / TF_VAR_do_token."
+            echo "Do not use Spaces (S3) access keys; they authenticate a different API and yield 401 for Domains/ACME."
+            exit 1
+          fi
+          echo "DO_TOKEN is valid for the DigitalOcean API (HTTP 200 on /v2/account)."
+
       - name: Import existing DOKS cluster into state (if present)
         working-directory: environments/dev/doks
         env:

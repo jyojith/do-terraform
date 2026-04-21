@@ -78,8 +78,8 @@ additionalArguments:
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
   - "--ping=true"
-  # Expose /ping on :80 (LB health checks); traefik:9000 is not on most LBs
-  - "--ping.entrypoint=web"
+  # Traefik 2.10+ expects ping.entryPoint (capital P), not .entrypoint — else flag is ignored
+  - "--ping.entryPoint=web"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
