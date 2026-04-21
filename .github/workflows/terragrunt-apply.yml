@@ -66,40 +66,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          CLUSTER_NAME="$(python3 - <<'PY'
-import re
-from pathlib import Path
+          CLUSTER_NAME="$(awk -F'=' '/^[[:space:]]*name[[:space:]]*=/{val=$2; gsub(/"/,"",val); gsub(/[[:space:]]/,"",val); print val; exit}' ../env.hcl)"
+          if [[ -z "${CLUSTER_NAME}" ]]; then
+            echo "Could not find cluster name in environments/dev/env.hcl"
+            exit 1
+          fi
 
-text = Path("../env.hcl").read_text()
-m = re.search(r'^\s*name\s*=\s*"([^"]+)"', text, re.MULTILINE)
-if not m:
-    raise SystemExit("Could not find cluster name in environments/dev/env.hcl")
-print(m.group(1))
-PY
-)"
-
-          CLUSTER_ID="$(CLUSTER_NAME="${CLUSTER_NAME}" python3 - <<'PY'
-import json
-import os
-import urllib.request
-
-token = os.environ["DO_TOKEN"]
-req = urllib.request.Request(
-    "https://api.digitalocean.com/v2/kubernetes/clusters",
-    headers={"Authorization": f"Bearer {token}"},
-)
-with urllib.request.urlopen(req) as resp:
-    data = json.load(resp)
-
-target = os.environ["CLUSTER_NAME"]
-for c in data.get("kubernetes_clusters", []):
-    if c.get("name") == target:
-        print(c.get("id", ""))
-        break
-else:
-    print("")
-PY
-)"
+          CLUSTER_ID="$(
+            CLUSTER_NAME="${CLUSTER_NAME}" curl -fsSL \
+              -H "Authorization: Bearer ${DO_TOKEN}" \
+              "https://api.digitalocean.com/v2/kubernetes/clusters" \
+            | CLUSTER_NAME="${CLUSTER_NAME}" python3 -c 'import json,os,sys; target=os.environ["CLUSTER_NAME"]; data=json.load(sys.stdin); print(next((c.get("id","") for c in data.get("kubernetes_clusters",[]) if c.get("name")==target), ""))'
+          )"
 
           if [[ -n "${CLUSTER_ID}" ]]; then
             echo "Found existing cluster ${CLUSTER_NAME} (${CLUSTER_ID}); importing into state."
