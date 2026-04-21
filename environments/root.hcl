@@ -4,8 +4,10 @@
 # Remote state: S3-compatible (e.g. DigitalOcean Spaces) when AWS_* + TG_STATE_* are set.
 # Otherwise "local" backend for fmt/validate CI without Spaces.
 #
-# For DigitalOcean Spaces, TG_STATE_REGION is the *Spaces datacenter* (e.g. fra1) in the endpoint
-# URL. The S3 backend "region" must be a *valid AWS region name* (e.g. us-east-1) for SigV4/STS;
+# For DigitalOcean Spaces, set TG_STATE_ENDPOINT to the *regional* S3 API host
+# (e.g. https://fra1.digitaloceanspaces.com), not the bucket vhost
+# (e.g. https://<bucket>.fra1.digitaloceanspaces.com). Bucket name stays in TG_STATE_BUCKET.
+# The S3 backend "region" must be a *valid AWS region name* (e.g. us-east-1) for SigV4/STS;
 # otherwise the SDK looks up sts.<region>.amazonaws.com and fails (e.g. sts.fra1.amazonaws.com).
 # See: https://docs.digitalocean.com/reference/terraform/backend/
 #
