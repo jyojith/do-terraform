@@ -6,14 +6,6 @@ resource "digitalocean_record" "root_domain" {
   ttl    = 60
 }
 
-resource "digitalocean_record" "wildcard" {
-  domain = var.domain_name
-  type   = "A"
-  name   = "*"
-  value  = var.traefik_lb_ip
-  ttl    = 60
-}
-
 resource "digitalocean_record" "argocd" {
   domain = var.domain_name
   type   = "A"

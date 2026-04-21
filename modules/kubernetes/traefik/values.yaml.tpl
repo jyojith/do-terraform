@@ -111,9 +111,6 @@ extraObjects:
           services:
             - name: api@internal
               kind: TraefikService
+      # One cert per route: omit tls.domains so Traefik uses the Host() rule only (no wildcard SAN).
       tls:
         certResolver: letsencrypt
-        domains:
-          - main: '*.${domain_name}'
-            sans:
-              - '${domain_name}'
