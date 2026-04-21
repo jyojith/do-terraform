@@ -8,7 +8,8 @@ output "token" {
 }
 
 output "cluster_ca_certificate" {
-  value = module.cluster.cluster_ca_certificate
+  value     = module.cluster.cluster_ca_certificate
+  sensitive = true
 }
 
 output "kubeconfig" {
@@ -22,5 +23,5 @@ output "cluster_urn" {
 }
 
 output "domain_urn" {
-  value = digitalocean_domain.this.urn
+  value = data.digitalocean_domain.existing.urn
 }
