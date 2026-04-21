@@ -20,8 +20,9 @@ resource "kubernetes_secret_v1" "do_dns" {
     namespace = kubernetes_namespace_v1.traefik.metadata[0].name
   }
 
-  data = {
-    "access-token" = base64encode(var.do_token)
+  # Plain value; the provider encodes for the API (use string_data, not data+base64encode).
+  string_data = {
+    "access-token" = trimspace(var.do_token)
   }
 
   type = "Opaque"

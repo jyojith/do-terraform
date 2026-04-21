@@ -9,7 +9,7 @@ variable "email" {
 }
 
 variable "do_token" {
-  description = "DigitalOcean API token (DNS challenge; DO_AUTH_TOKEN in pod)"
+  description = "DigitalOcean API token with access to manage DNS for the ACME domain (lego: DO_AUTH_TOKEN in pod; must not be read-only for domains)."
   type        = string
   sensitive   = true
 }
