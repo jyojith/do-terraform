@@ -63,6 +63,11 @@ jobs:
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           DO_TOKEN: ${{ secrets.DO_TOKEN }}
+          TG_STATE_BUCKET: ${{ secrets.TG_STATE_BUCKET }}
+          TG_STATE_REGION: ${{ secrets.TG_STATE_REGION }}
+          TG_STATE_ENDPOINT: ${{ secrets.TG_STATE_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
 
@@ -91,6 +96,11 @@ jobs:
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           DO_TOKEN: ${{ secrets.DO_TOKEN }}
+          TG_STATE_BUCKET: ${{ secrets.TG_STATE_BUCKET }}
+          TG_STATE_REGION: ${{ secrets.TG_STATE_REGION }}
+          TG_STATE_ENDPOINT: ${{ secrets.TG_STATE_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           terragrunt import -input=false module.traefik.kubernetes_namespace_v1.traefik traefik || true
@@ -104,4 +114,9 @@ jobs:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           DO_TOKEN: ${{ secrets.DO_TOKEN }}
           TF_VAR_argocd_admin_password_hash: ${{ secrets.ARGOCD_ADMIN_PASSWORD_HASH }}
+          TG_STATE_BUCKET: ${{ secrets.TG_STATE_BUCKET }}
+          TG_STATE_REGION: ${{ secrets.TG_STATE_REGION }}
+          TG_STATE_ENDPOINT: ${{ secrets.TG_STATE_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TG_STATE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TG_STATE_SECRET_ACCESS_KEY }}
         run: terragrunt run-all apply --terragrunt-non-interactive -input=false -auto-approve
