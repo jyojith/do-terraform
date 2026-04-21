@@ -8,7 +8,8 @@ locals {
   name           = "bizquery-k8s-dev"
   node_count     = 1
   node_size      = "s-1vcpu-2gb"
-  k8s_version    = "1.33.1-do.1"
+  # Leave empty to use the latest available DigitalOcean Kubernetes version.
+  k8s_version    = ""
   domain_name    = "bizquery.dev"
   email          = "admin@unisphere.wiki"
   repo_url       = "https://github.com/jyojith/do-terraform"

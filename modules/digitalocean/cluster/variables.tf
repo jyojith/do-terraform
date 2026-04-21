@@ -27,4 +27,5 @@ variable "node_size" {
 variable "k8s_version" {
   description = "DigitalOcean Kubernetes version"
   type        = string
+  default     = ""
 }
