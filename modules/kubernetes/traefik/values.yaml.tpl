@@ -66,13 +66,20 @@ env:
       secretKeyRef:
         name: traefik-do-dns
         key: access-token
+  # Some lego/CLI docs use this name; same token as above (V2 personal access only).
+  - name: DO_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: traefik-do-dns
+        key: access-token
 
 additionalArguments:
   - "--entrypoints.web.address=:8000"
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
   - "--ping=true"
-  - "--ping.entrypoint=traefik"
+  # Expose /ping on :80 (LB health checks); traefik:9000 is not on most LBs
+  - "--ping.entrypoint=web"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
