@@ -3,7 +3,7 @@ include "root" {
 }
 
 locals {
-  env                  = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  env = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   # File-based mock: long sensitive YAML via TF_VAR_* env can be truncated; file() passes full content to OpenTofu.
   mock_kubeconfig_file = "${get_terragrunt_dir()}/../mock-kubeconfig.yaml"
 }
@@ -45,9 +45,9 @@ generate "providers_legacy_stub" {
 }
 
 inputs = {
-  domain_name         = local.env.locals.domain_name
-  email               = local.env.locals.email
-  do_token            = length(trimspace(get_env("TF_VAR_do_token", ""))) > 0 ? get_env("TF_VAR_do_token", "") : get_env("DO_TOKEN", "")
+  domain_name = local.env.locals.domain_name
+  email       = local.env.locals.email
+  do_token    = length(trimspace(get_env("TF_VAR_do_token", ""))) > 0 ? get_env("TF_VAR_do_token", "") : get_env("DO_TOKEN", "")
   # coalesce/whitespace: dependency can yield "" or whitespace-only; that is not valid YAML/PEM.
   k8s_kubeconfig_yaml = length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file)
 }

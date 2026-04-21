@@ -59,5 +59,5 @@ inputs = {
   env                        = local.env.locals.env
   app_namespace              = local.env.locals.app_namespace
   argocd_admin_password_hash = get_env("TF_VAR_argocd_admin_password_hash", "")
-  k8s_kubeconfig_yaml = length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file)
+  k8s_kubeconfig_yaml        = length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file)
 }
