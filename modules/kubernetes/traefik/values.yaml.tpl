@@ -78,8 +78,8 @@ additionalArguments:
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
   - "--ping=true"
-  # Traefik 2.10+ expects ping.entryPoint (capital P), not .entrypoint — else flag is ignored
-  - "--ping.entryPoint=web"
+  # Manual routing: expose ping on web + websecure (DO LB often health-checks :443; built-in ping is single entrypoint only)
+  - "--ping.manualrouting=true"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
@@ -89,6 +89,38 @@ additionalArguments:
   - "--entrypoints.traefik.http.tls=true"
 
 extraObjects:
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: traefik-ping-web
+      namespace: traefik
+    spec:
+      entryPoints:
+        - web
+      routes:
+        - match: PathPrefix(`/ping`)
+          kind: Rule
+          priority: 2147483647
+          services:
+            - name: ping@internal
+              kind: TraefikService
+  - apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: traefik-ping-websecure
+      namespace: traefik
+    spec:
+      entryPoints:
+        - websecure
+      routes:
+        - match: PathPrefix(`/ping`)
+          kind: Rule
+          priority: 2147483647
+          services:
+            - name: ping@internal
+              kind: TraefikService
+      # Required for HTTPS entrypoint; default cert is fine for LB probes
+      tls: {}
   - apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:
