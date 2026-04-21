@@ -40,7 +40,7 @@ resource "helm_release" "traefik" {
   chart            = "traefik"
   version          = "25.0.0"
   repository       = "https://helm.traefik.io/traefik"
-  timeout          = 300
+  timeout          = 900
   create_namespace = false
   take_ownership   = true
 
