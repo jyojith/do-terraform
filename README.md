@@ -115,6 +115,8 @@ Local file (recommended): copy **`.env.example`** to **`.env`** in the repo root
 set -a && source .env && set +a
 ```
 
+To use the **same** DigitalOcean token as in GitHub (**repository secret `DO_TOKEN`**, wired in `terragrunt-apply.yml` to `TF_VAR_do_token` / `DO_TOKEN`), install [GitHub CLI](https://cli.github.com/) and run `gh auth login`. If `TF_VAR_do_token` is unset after loading `.env`, `./scripts/tg.sh` runs `gh secret get DO_TOKEN` automatically. To ignore a stale value in `.env`, run with `TG_DO_TOKEN_FROM_GITHUB=1`.
+
 ## Helpers (Makefile and `scripts/tg.sh`)
 
 | Command | What it does |

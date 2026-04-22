@@ -41,9 +41,12 @@ resource "helm_release" "traefik" {
   chart            = "traefik"
   version          = "25.0.0"
   repository       = "https://helm.traefik.io/traefik"
-  timeout          = 900
+  timeout          = 600
   create_namespace = false
   take_ownership   = true
+  # Avoid helm --wait races with LoadBalancer Services + CCM (seen as: services "traefik" not found).
+  # Pods may still be starting; re-run apply if traefik_lb_ip is null until DO assigns the LB IP.
+  wait             = false
 
   values = [local.traefik_values]
 

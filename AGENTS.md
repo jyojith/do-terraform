@@ -26,7 +26,7 @@ Check with: `cd environments/dev && terragrunt graph-dependencies` or `./scripts
 - **`TF_VAR_do_token`** or **`DO_TOKEN`**: DigitalOcean token (Terraform provider + Traefik ACME DNS challenge via secret → **`DO_AUTH_TOKEN`** in the Traefik pod).
 - **`TF_VAR_argocd_admin_password_hash`**: Argo CD admin (bcrypt).
 - Non-secret defaults: `environments/dev/env.hcl` (e.g. `domain_name`, `email` for ACME).
-- Copy **`.env.example`** → **`.env`** (gitignored); load with `set -a && source .env && set +a`.
+- Copy **`.env.example`** → **`.env`** (gitignored); load with `set -a && source .env && set +a`. **`./scripts/tg.sh`** can fill `TF_VAR_do_token` from the GitHub repository secret **`DO_TOKEN`** via `gh secret get DO_TOKEN` when the vars are empty, or when **`TG_DO_TOKEN_FROM_GITHUB=1`** (same secret name as **`terragrunt-apply.yml`**).
 
 ## Commands agents should use
 

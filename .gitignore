@@ -4,3 +4,5 @@
 local-keys
 terraform.tfstate*
 .env
+**/terragrunt-debug.tfvars.json
+**/terragrunt_rendered.json
