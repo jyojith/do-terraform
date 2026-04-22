@@ -20,6 +20,8 @@ module "cluster" {
   node_count  = var.node_count
   node_size   = var.node_size
   k8s_version = var.k8s_version
+
+  depends_on = [digitalocean_project.main]
 }
 EOF
 }
