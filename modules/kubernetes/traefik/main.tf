@@ -5,6 +5,10 @@ terraform {
       version               = ">= 2.11"
       configuration_aliases = [kubernetes.k8s]
     }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9.0"
+    }
   }
 }
 
@@ -53,6 +57,14 @@ resource "helm_release" "traefik" {
   depends_on = [kubernetes_secret_v1.do_dns]
 }
 
+# With wait = false, the LB Service may have no .status.loadBalancer until the cloud CCM assigns
+# an IP. Without this delay, traefik_lb_ip is often null and Terragrunt dependency outputs are empty
+# (dns stack fails: "no variable named dependency" / "detected no outputs").
+resource "time_sleep" "wait_for_traefik_lb" {
+  depends_on      = [helm_release.traefik]
+  create_duration = "90s"
+}
+
 data "kubernetes_service_v1" "traefik_lb" {
   provider = kubernetes.k8s
   metadata {
@@ -60,5 +72,5 @@ data "kubernetes_service_v1" "traefik_lb" {
     namespace = kubernetes_namespace_v1.traefik.metadata[0].name
   }
 
-  depends_on = [helm_release.traefik]
+  depends_on = [time_sleep.wait_for_traefik_lb]
 }
