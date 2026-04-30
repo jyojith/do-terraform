@@ -27,6 +27,8 @@ provider "kubernetes" {
   cluster_ca_certificate = local.k8s_cluster_ca_pem
 }
 
+provider "time" {}
+
 provider "helm" {
   # Isolate Helm repo config/cache from the machine default (~/.config/helm, ~/Library/Caches/helm).
   # A stale or missing Bitnami index in the global cache breaks `helm_release` even for unrelated charts.

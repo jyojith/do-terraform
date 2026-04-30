@@ -24,7 +24,11 @@ dependency "traefik" {
   mock_outputs = {
     traefik_lb_ip = "203.0.113.50"
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  # init / destroy / state: when traefik_lb_ip is missing from remote state, Terragrunt must still
+  # resolve this block or inputs fail with "Unknown variable". Do not add "apply" (real LB IP required).
+  mock_outputs_allowed_terraform_commands = [
+    "init", "validate", "plan", "import", "destroy", "state"
+  ]
 }
 
 terraform {
