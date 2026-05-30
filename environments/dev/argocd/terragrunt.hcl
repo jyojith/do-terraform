@@ -5,6 +5,7 @@ include "root" {
 locals {
   env                  = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   mock_kubeconfig_file = "${get_terragrunt_dir()}/../mock-kubeconfig.yaml"
+  k8s_kubeconfig_yaml  = get_env("TF_VAR_k8s_kubeconfig_yaml", "")
 }
 
 generate "argocd_module" {
@@ -26,6 +27,7 @@ EOF
 }
 
 dependency "doks" {
+  enabled     = length(trimspace(local.k8s_kubeconfig_yaml)) == 0
   config_path = "../doks"
   mock_outputs = {
     kubeconfig = file(local.mock_kubeconfig_file)
@@ -59,5 +61,5 @@ inputs = {
   env                        = local.env.locals.env
   app_namespace              = local.env.locals.app_namespace
   argocd_admin_password_hash = get_env("TF_VAR_argocd_admin_password_hash", "")
-  k8s_kubeconfig_yaml        = length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file)
+  k8s_kubeconfig_yaml        = length(trimspace(local.k8s_kubeconfig_yaml)) > 0 ? local.k8s_kubeconfig_yaml : (length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file))
 }
