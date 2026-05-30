@@ -13,6 +13,7 @@ generate "network_module" {
 module "network" {
   source        = "${get_repo_root()}/modules/digitalocean/network"
   domain_name   = var.domain_name
+  dns_records   = var.dns_records
   region        = var.region
   traefik_lb_ip = var.traefik_lb_ip
 }
@@ -37,6 +38,7 @@ terraform {
 
 inputs = {
   domain_name   = local.env.locals.domain_name
+  dns_records   = local.env.locals.dns_records
   region        = local.env.locals.do_region
   traefik_lb_ip = dependency.traefik.outputs.traefik_lb_ip
   do_token      = length(trimspace(get_env("TF_VAR_do_token", ""))) > 0 ? get_env("TF_VAR_do_token", "") : get_env("DO_TOKEN", "")

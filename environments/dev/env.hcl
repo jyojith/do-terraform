@@ -9,9 +9,20 @@ locals {
   node_count   = 1
   node_size    = "s-1vcpu-2gb"
   # Leave empty to use the latest available DigitalOcean Kubernetes version.
-  k8s_version    = ""
-  domain_name    = "bizquery.dev"
-  email          = "admin@unisphere.wiki"
+  k8s_version = ""
+  domain_name = "bizquery.dev"
+  email       = "admin@unisphere.wiki"
+  dns_records = {
+    "@" = {
+      ttl = 60
+    }
+    argocd = {
+      ttl = 300
+    }
+    traefik = {
+      ttl = 60
+    }
+  }
   repo_url       = "https://github.com/jyojith/do-terraform"
   branch         = "main"
   manifests_path = "k8s/apps/dev"

@@ -1,23 +1,24 @@
-resource "digitalocean_record" "root_domain" {
-  domain = var.domain_name
-  type   = "A"
-  name   = "@"
-  value  = var.traefik_lb_ip
-  ttl    = 60
+moved {
+  from = digitalocean_record.root_domain
+  to   = digitalocean_record.records["@"]
 }
 
-resource "digitalocean_record" "argocd" {
-  domain = var.domain_name
-  type   = "A"
-  name   = "argocd"
-  value  = var.traefik_lb_ip
-  ttl    = 300
+moved {
+  from = digitalocean_record.argocd
+  to   = digitalocean_record.records["argocd"]
 }
 
-resource "digitalocean_record" "traefik" {
+moved {
+  from = digitalocean_record.traefik
+  to   = digitalocean_record.records["traefik"]
+}
+
+resource "digitalocean_record" "records" {
+  for_each = var.dns_records
+
   domain = var.domain_name
   type   = "A"
-  name   = "traefik"
+  name   = each.key
   value  = var.traefik_lb_ip
-  ttl    = 60
+  ttl    = each.value.ttl
 }
