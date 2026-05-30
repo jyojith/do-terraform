@@ -16,10 +16,27 @@ resource "helm_release" "argocd" {
         cm = {
           "url" = "https://argocd.${var.domain_name}"
         }
+        params = {
+          "server.insecure" = true
+        }
       }
       server = {
         service = {
           type = "ClusterIP"
+        }
+        ingress = {
+          enabled          = true
+          ingressClassName = "traefik"
+          annotations = {
+            "traefik.ingress.kubernetes.io/router.entrypoints"        = "websecure"
+            "traefik.ingress.kubernetes.io/router.tls"                = "true"
+            "traefik.ingress.kubernetes.io/router.tls.certresolver"   = "letsencrypt"
+            "traefik.ingress.kubernetes.io/router.tls.domains.0.main" = var.domain_name
+            "traefik.ingress.kubernetes.io/router.tls.domains.0.sans" = "*.${var.domain_name}"
+          }
+          hosts    = ["argocd.${var.domain_name}"]
+          paths    = ["/"]
+          pathType = "Prefix"
         }
       }
     })

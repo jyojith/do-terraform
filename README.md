@@ -2,6 +2,17 @@
 
 This repository provisions a **DigitalOcean Kubernetes (DOKS)** cluster and supporting pieces: **project + domain**, **Traefik** ingress with **built-in ACME** (Let’s Encrypt DNS-01 via DigitalOcean), **DNS A records**, and **Argo CD** GitOps. Infrastructure is split into **Terragrunt stacks** under `environments/dev/` with separate state per stack, explicit **dependencies**, and **DRY** shared config.
 
+## Project aim
+
+The goal of this project is to provide a small, repeatable Kubernetes platform on DigitalOcean:
+
+- **Terraform/Terragrunt owns the platform foundation:** DigitalOcean project, DOKS cluster, DNS records, Traefik, and Argo CD.
+- **Argo CD owns Kubernetes application management:** application manifests live in Git and are synced into the cluster from `k8s/apps/dev`.
+- **Traefik is the cluster ingress layer:** services running in the cluster are exposed through Traefik, with TLS certificates issued by Traefik's built-in ACME resolver.
+- **Domain names are environment configuration:** domain-related values come from the environment config and Terraform/Terragrunt inputs rather than being hard-coded into reusable modules.
+
+In practice, Terraform should bootstrap enough infrastructure for Argo CD to take over day-to-day Kubernetes object management. After the platform is up, new services should usually be added as Kubernetes manifests under the Argo CD sync path, not as Terraform-managed Kubernetes resources.
+
 ## Why Terragrunt?
 
 - **Separate state** per layer (cluster vs addons vs DNS) for safer blast radius and parallel plans where possible.
@@ -31,7 +42,7 @@ digraph {
 
 **Apply order:** `terragrunt run-all apply` runs **`doks`** → **`traefik`** → **`dns`** → **`argocd`**.
 
-**TLS:** Certificates are issued by **Traefik’s ACME** (certificate resolver `letsencrypt`), not cert-manager. The same DigitalOcean API token is stored in a Kubernetes secret and exposed to Traefik as **`DO_AUTH_TOKEN`** for the DNS challenge. Use Ingress / IngressRoute annotations such as `traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt` for app hosts (see `k8s/apps/dev/loading-page/ingress.yaml`).
+**TLS:** Certificates are issued by **Traefik’s ACME** (certificate resolver `letsencrypt`), not cert-manager. The same DigitalOcean API token is stored in a Kubernetes secret and exposed to Traefik as **`DO_AUTH_TOKEN`** for the DNS challenge. Use Ingress / IngressRoute annotations such as `traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt` for app hosts (see `k8s/apps/dev/loading-page/ingress.yaml`). Traefik uses Let’s Encrypt production ACME by default; add the staging `caServer` only for testing certificate issuance.
 
 ```mermaid
 flowchart TD
@@ -54,7 +65,7 @@ flowchart TD
 ├── scripts/tg.sh                # Terragrunt helpers (cache, run-all, graph, env-check)
 ├── .env.example                 # Template for TF_VAR_* — copy to .env (gitignored)
 ├── environments/
-│   ├── root.hcl                 # Shared remote_state (local backend path per stack)
+│   ├── root.hcl                 # Shared backend generation (S3/Spaces when configured, local otherwise)
 │   └── dev/
 │       ├── env.hcl              # Non-secret locals (region, cluster size, domain, email, …)
 │       ├── doks/terragrunt.hcl  # Only Terragrunt: inputs + terraform { source = … }
@@ -80,17 +91,78 @@ flowchart TD
 ```
 
 **Why split `environments/` vs `terraform/stacks/`?**  
-`environments/` holds **environment-specific** Terragrunt only (dependencies, inputs, generated providers). **`terraform/stacks/`** holds the Terraform root modules once, referenced via `terraform { source = "${get_repo_root()}/terraform/stacks/<stack>" }`. That matches the usual pattern: **thin environment config**, **one copy of each stack’s `.tf` files**, shared **`modules/`**.
+`environments/` holds **environment-specific** Terragrunt only (dependencies, inputs, generated modules, generated backend config). **`terraform/stacks/`** holds the Terraform root modules once, referenced via `terraform { source = "${get_repo_root()}/terraform/stacks/<stack>" }`. That matches the usual pattern: **thin environment config**, **one copy of each stack’s `.tf` files**, shared **`modules/`**.
 
 ### Implementation notes
 
 - Each `environments/dev/<stack>/terragrunt.hcl` can **generate** `*.module.tf` with a **literal** absolute `module.source` (`get_repo_root()` at plan time) because Terraform does not allow `local` values in `module.source`. Run stacks with **Terragrunt**, not raw `terraform` in `terraform/stacks/` alone, or module sources will be missing.
-- Kubernetes-dependent stacks **generate** `providers.generated.tf` from **`dependency.doks.outputs`** (Helm uses the `kubernetes = { … }` map form required by **Helm provider v3**).
+- Kubernetes-dependent stacks read kubeconfig YAML from **`dependency.doks.outputs.kubeconfig`** and configure providers in `terraform/stacks/*/providers.tf`. Helm uses the `kubernetes = { … }` map form required by **Helm provider v3**.
 - **Mock outputs** on the `doks` / `traefik` dependencies allow `validate` / `plan` when upstream state is empty (CI / cold start). Real applies use outputs from state after each dependency is applied.
 
 ### Remote state
 
-`environments/root.hcl` uses a **local** backend with state stored next to each stack (`terraform.tfstate` in that stack directory). For teams, replace this block with **S3**, **GCS**, **Terraform Cloud**, etc., still via Terragrunt’s `remote_state` (see [Terragrunt remote state](https://terragrunt.gruntwork.io/docs/features/keep-your-remote-state-configuration-dry/)).
+`environments/root.hcl` generates backend configuration for every stack. If `TG_STATE_BUCKET`, `TG_STATE_ENDPOINT`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` are set, it uses an S3-compatible backend such as DigitalOcean Spaces. Otherwise it falls back to a **local** backend with state stored next to each stack (`terraform.tfstate` in that stack directory). Do not commit local state files.
+
+## Adding services
+
+Use Argo CD as the default control plane for Kubernetes workloads:
+
+1. Add or update manifests under `k8s/apps/dev`.
+2. Give each service an `Ingress` or `IngressRoute` for its host.
+3. Use Traefik TLS annotations, including `traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt`.
+4. Add the required hostname to `dns_records` in `environments/dev/env.hcl` when the host is a new DNS name that should point to the Traefik LoadBalancer.
+
+Keep Terraform focused on infrastructure and bootstrap components. Avoid managing normal application Deployments, Services, ConfigMaps, or Ingresses directly in Terraform unless they are part of the platform itself.
+
+### DNS records
+
+The DNS stack creates A records from `dns_records` in `environments/dev/env.hcl`. Each key is a record name under `domain_name`; for example:
+
+```hcl
+dns_records = {
+  "@" = {
+    ttl = 60
+  }
+  argocd = {
+    ttl = 300
+  }
+  api = {
+    ttl = 300
+  }
+}
+```
+
+With `domain_name = "bizquery.dev"`, this points `bizquery.dev`, `argocd.bizquery.dev`, and `api.bizquery.dev` to Traefik's LoadBalancer IP. Traefik can issue a separate certificate for each host when the matching Ingress or IngressRoute uses the `letsencrypt` resolver.
+
+### Secrets in apps
+
+Current decision: use native Kubernetes Secrets for now, and let Argo CD manage the manifests that reference or mount those secrets. Do not commit raw secret values into Git. For the initial dev setup, application manifests can reference expected Secret names and keys, while the actual Secret objects can be created manually or added later through a safer secret delivery flow.
+
+DigitalOcean App Platform supports encrypted environment variables, but this project runs workloads on DOKS, so App Platform secrets are not the right backing store for these Kubernetes apps. When this needs to become production-grade, prefer External Secrets Operator with a real backing provider.
+
+Future options:
+
+- External Secrets Operator backed by HashiCorp Vault or another supported remote secret store.
+- Sealed Secrets.
+- SOPS-encrypted Kubernetes Secrets.
+- Manually created Kubernetes Secrets for local/dev only.
+
+Example app manifest pattern:
+
+```yaml
+envFrom:
+  - secretRef:
+      name: my-service-secrets
+```
+
+or mount individual secret keys as files:
+
+```yaml
+volumes:
+  - name: app-secrets
+    secret:
+      secretName: my-service-secrets
+```
 
 ## Prerequisites
 

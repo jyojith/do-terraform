@@ -17,4 +17,4 @@ spec:
         - name: loading-page
           image: edirom/vife-website
           ports:
-            - containerPort: 80
+            - containerPort: 8080
