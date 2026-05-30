@@ -24,9 +24,10 @@ resource "kubernetes_secret_v1" "do_dns" {
     namespace = kubernetes_namespace_v1.traefik.metadata[0].name
   }
 
-  # kubernetes_secret_v1 only supports `data` (per-key base64), not string_data.
+  # Terraform's Kubernetes provider base64-encodes secret data before sending it to the API.
+  # The pod environment variable must receive the raw DigitalOcean token, not a base64 string.
   data = {
-    "access-token" = base64encode(trimspace(var.do_token))
+    "access-token" = trimspace(var.do_token)
   }
 
   type = "Opaque"
@@ -50,7 +51,7 @@ resource "helm_release" "traefik" {
   take_ownership   = true
   # Avoid helm --wait races with LoadBalancer Services + CCM (seen as: services "traefik" not found).
   # Pods may still be starting; re-run apply if traefik_lb_ip is null until DO assigns the LB IP.
-  wait             = false
+  wait = false
 
   values = [local.traefik_values]
 

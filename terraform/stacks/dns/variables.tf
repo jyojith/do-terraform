@@ -9,6 +9,13 @@ variable "domain_name" {
   type        = string
 }
 
+variable "dns_records" {
+  description = "DNS A records to point at Traefik. Keys are record names such as @, argocd, api."
+  type = map(object({
+    ttl = optional(number, 300)
+  }))
+}
+
 variable "region" {
   description = "DigitalOcean region (passed through for consistency)"
   type        = string

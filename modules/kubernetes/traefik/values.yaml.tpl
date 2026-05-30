@@ -37,10 +37,11 @@ ingressRoute:
 service:
   type: LoadBalancer
   annotations:
+    service.beta.kubernetes.io/do-loadbalancer-type: "REGIONAL"
     # Default DO LB health check is tcp or http to "/"; without override, probes can miss Traefik's /ping.
     service.beta.kubernetes.io/do-loadbalancer-override-health-check: "true"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
-    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "80"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-port: "9000"
     service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/ping"
 
 # ACME / Let's Encrypt storage (lego)
@@ -53,10 +54,10 @@ certResolvers:
   letsencrypt:
     email: ${email}
     storage: /data/acme.json
-    caServer: https://acme-staging-v02.api.letsencrypt.org/directory
     dnsChallenge:
       provider: digitalocean
-      delayBeforeCheck: 30
+      delayBeforeCheck: 90
+      disablePropagationCheck: true
 
 env:
   - name: POD_NAME
@@ -84,14 +85,13 @@ additionalArguments:
   - "--entrypoints.websecure.address=:8443"
   - "--entrypoints.traefik.address=:9000"
   - "--ping=true"
-  - "--ping.entryPoint=web"
+  - "--ping.entryPoint=traefik"
   - "--api.dashboard=true"
   - "--api.insecure=false"
   - "--accesslog=true"
   - "--log.level=DEBUG"
   - "--providers.kubernetesingress=true"
   - "--providers.kubernetescrd=true"
-  - "--entrypoints.traefik.http.tls=true"
 
 extraObjects:
   - apiVersion: traefik.io/v1alpha1
