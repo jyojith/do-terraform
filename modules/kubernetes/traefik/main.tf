@@ -35,8 +35,9 @@ resource "kubernetes_secret_v1" "do_dns" {
 
 locals {
   traefik_values = templatefile("${path.module}/values.yaml.tpl", {
-    domain_name = var.domain_name
-    email       = var.email
+    domain_name            = var.domain_name
+    email                  = var.email
+    dashboard_users_string = "admin:${var.dashboard_password_hash}"
   })
 }
 

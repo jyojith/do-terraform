@@ -178,6 +178,7 @@ Export (or use a private `*.auto.tfvars` / CI secrets):
 |----------|---------|
 | `TF_VAR_do_token` or `DO_TOKEN` | DigitalOcean API token (provider + **Traefik ACME DNS challenge**) |
 | `TF_VAR_argocd_admin_password_hash` | Bcrypt hash for Argo CD `admin` |
+| `TF_VAR_traefik_dashboard_password_hash` | Bcrypt hash for Traefik dashboard basic auth user `admin` |
 
 `environments/dev/env.hcl` sets **`email`** for ACME registration (non-secret).
 
@@ -200,7 +201,7 @@ To use the **same** DigitalOcean token as in GitHub (**repository secret `DO_TOK
 | `make tg-apply` / `./scripts/tg.sh apply-all` | `terragrunt run-all apply` (runs `env-check` first) |
 | `make tg-graph` / `./scripts/tg.sh graph` | Print `terragrunt graph-dependencies` (DOT) |
 | `./scripts/tg.sh graph-mermaid` | Print a Mermaid diagram of the same graph (for docs / viewers) |
-| `./scripts/tg.sh env-check` | Verify `TF_VAR_do_token` / `DO_TOKEN` and `TF_VAR_argocd_admin_password_hash` are set |
+| `./scripts/tg.sh env-check` | Verify `TF_VAR_do_token` / `DO_TOKEN`, `TF_VAR_argocd_admin_password_hash`, and `TF_VAR_traefik_dashboard_password_hash` are set |
 | `make tg-fmt` | `terraform fmt` on `modules/` + `terraform/`, `terragrunt hclfmt` on `environments/dev` |
 
 Pass extra flags through to Terragrunt after init-all, e.g. `./scripts/tg.sh init-all -reconfigure`.

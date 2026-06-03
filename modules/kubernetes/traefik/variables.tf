@@ -13,3 +13,9 @@ variable "do_token" {
   type        = string
   sensitive   = true
 }
+
+variable "dashboard_password_hash" {
+  description = "Bcrypt hash for Traefik dashboard basic auth user 'admin'."
+  type        = string
+  sensitive   = true
+}

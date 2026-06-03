@@ -24,3 +24,9 @@ variable "k8s_kubeconfig_yaml" {
   type        = string
   sensitive   = true
 }
+
+variable "traefik_dashboard_password_hash" {
+  description = "Bcrypt hash used for Traefik dashboard basic auth user 'admin'"
+  type        = string
+  sensitive   = true
+}

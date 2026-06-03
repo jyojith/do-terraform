@@ -94,6 +94,24 @@ additionalArguments:
   - "--providers.kubernetescrd=true"
 
 extraObjects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: traefik-dashboard-auth
+      namespace: traefik
+    type: Opaque
+    stringData:
+      users: "${dashboard_users_string}"
+
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: traefik-dashboard-auth
+      namespace: traefik
+    spec:
+      basicAuth:
+        secret: traefik-dashboard-auth
+
   - apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:
@@ -108,6 +126,8 @@ extraObjects:
       routes:
         - match: Host(`traefik.${domain_name}`)
           kind: Rule
+          middlewares:
+            - name: traefik-dashboard-auth
           services:
             - name: api@internal
               kind: TraefikService

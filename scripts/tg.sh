@@ -307,6 +307,10 @@ env_check() {
     echo "Missing: TF_VAR_argocd_admin_password_hash (required for argocd stack)" >&2
     ok=0
   fi
+  if [[ -z "${TF_VAR_traefik_dashboard_password_hash:-}" ]]; then
+    echo "Missing: TF_VAR_traefik_dashboard_password_hash (required for traefik dashboard auth)" >&2
+    ok=0
+  fi
   if [[ "$ok" -eq 1 ]]; then
     echo "Environment looks OK for plan/apply (tokens present)."
   else
