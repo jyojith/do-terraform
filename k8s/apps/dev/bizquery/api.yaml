@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bizquery-api
+  namespace: bizquery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bizquery-api
+  template:
+    metadata:
+      labels:
+        app: bizquery-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull # docker-registry secret for ghcr.io — created out-of-band (see README)
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z bizquery-postgres 5432; do echo waiting for db; sleep 2; done"]
+      containers:
+        - name: api
+          image: ghcr.io/bizquery/bizquery-platform:develop
+          args: ["api"] # entrypoint runs init-db (advisory-locked) then uvicorn
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: bizquery-config
+            - secretRef:
+                name: bizquery-secrets
+          startupProbe: # init-db + uvicorn can take a moment on first boot
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: raw-files
+              mountPath: /data/raw
+      volumes:
+        - name: raw-files
+          persistentVolumeClaim:
+            claimName: bizquery-raw-files
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bizquery-api
+  namespace: bizquery
+spec:
+  selector:
+    app: bizquery-api
+  ports:
+    - port: 8000
+      targetPort: 8000

@@ -10,6 +10,9 @@ spec:
           - name: loading-page
             path: k8s/apps/dev/loading-page
             namespace: loading-page
+          - name: bizquery
+            path: k8s/apps/dev/bizquery
+            namespace: bizquery
   template:
     metadata:
       name: '{{name}}'

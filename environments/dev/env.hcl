@@ -7,7 +7,7 @@ locals {
   project_name = "bizquery-dev"
   name         = "bizquery-k8s-dev"
   node_count   = 1
-  node_size    = "s-1vcpu-2gb"
+  node_size    = "s-2vcpu-4gb" # bumped from s-1vcpu-2gb: 1 node shares ArgoCD+Traefik+system + api/worker/postgres
   # Leave empty to use the latest available DigitalOcean Kubernetes version.
   k8s_version = ""
   domain_name = "bizquery.dev"
@@ -21,6 +21,9 @@ locals {
     }
     traefik = {
       ttl = 60
+    }
+    app = {
+      ttl = 300
     }
   }
   repo_url       = "https://github.com/jyojith/do-terraform"

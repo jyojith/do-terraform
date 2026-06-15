@@ -39,3 +39,9 @@ variable "k8s_kubeconfig_yaml" {
   type        = string
   sensitive   = true
 }
+
+variable "do_model_access_key" {
+  description = "DigitalOcean Gradient AI model access key — drives BQP chat + embeddings (inference.do-ai.run)"
+  type        = string
+  sensitive   = true
+}

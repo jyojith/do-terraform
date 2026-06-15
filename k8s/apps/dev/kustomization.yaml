@@ -1,2 +1,6 @@
 resources:
   - loading-page/
+  # Deployed directly by the app-of-apps (same pattern as loading-page). Each manifest carries its own
+  # metadata.namespace (bizquery), so resources land there regardless of the app-of-apps destination.
+  # This supersedes the bizquery entry in argocd-applicationset.yaml, which is not applied anywhere.
+  - bizquery/

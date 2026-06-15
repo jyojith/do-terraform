@@ -1,0 +1,72 @@
+# In-cluster Postgres (with pgvector) for the dev environment. Self-contained and free, but it
+# competes for RAM on the node — for anything beyond dev, prefer a DO Managed Database (it supports
+# the `vector` extension) and just point BQP_DATABASE_URL at it instead (drop this file).
+apiVersion: v1
+kind: Service
+metadata:
+  name: bizquery-postgres
+  namespace: bizquery
+spec:
+  selector:
+    app: bizquery-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None # headless: stable DNS for the StatefulSet pod
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bizquery-postgres
+  namespace: bizquery
+spec:
+  serviceName: bizquery-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bizquery-postgres
+  template:
+    metadata:
+      labels:
+        app: bizquery-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: bqp
+            - name: POSTGRES_DB
+              value: bqp
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bizquery-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "bqp"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: do-block-storage
+        resources:
+          requests:
+            storage: 5Gi

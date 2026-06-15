@@ -22,3 +22,10 @@ provider "helm" {
     cluster_ca_certificate = local.k8s_cluster_ca_pem
   }
 }
+
+# Used by bizquery-secrets.tf to provision the app namespace + bizquery-secrets Secret.
+provider "kubernetes" {
+  host                   = local.k8s_host
+  token                  = local.k8s_token
+  cluster_ca_certificate = local.k8s_cluster_ca_pem
+}
