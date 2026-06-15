@@ -40,3 +40,16 @@ variable "argocd_admin_password_hash" {
   description = "BCrypt-hashed admin password for ArgoCD"
   type        = string
 }
+
+variable "deploy_repo_url" {
+  description = "Git URL of the private deployment repo Argo CD must read"
+  type        = string
+  default     = ""
+}
+
+variable "deploy_repo_pat" {
+  description = "GitHub PAT with read access to the deployment repo (Argo CD repository credential)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

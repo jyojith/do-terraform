@@ -58,3 +58,16 @@ variable "ghcr_pat" {
   sensitive   = true
   default     = ""
 }
+
+variable "deploy_repo_url" {
+  description = "Git URL of the private deployment repo Argo CD reads"
+  type        = string
+  default     = ""
+}
+
+variable "deploy_repo_pat" {
+  description = "GitHub PAT with read access to the deployment repo (Argo CD repository credential)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
