@@ -19,17 +19,28 @@ resource "helm_release" "argocd" {
         params = {
           "server.insecure" = true
         }
-        # Repository credential for the PRIVATE deployment repo, so Argo CD can read it. The chart
-        # renders this into a repository Secret in the argocd namespace (no separate secret/ordering).
-        repositories = var.deploy_repo_pat == "" ? {} : {
-          bizquery-deployment = {
-            url      = var.deploy_repo_url
-            type     = "git"
-            name     = "bizquery-platform-deployment"
-            username = "x-access-token"
-            password = var.deploy_repo_pat
+        # Repository credentials for the PRIVATE deployment repos, so Argo CD can read them. The chart
+        # renders these into repository Secrets in the argocd namespace. Both reuse the one deploy PAT.
+        repositories = merge(
+          var.deploy_repo_pat == "" ? {} : {
+            bizquery-deployment = {
+              url      = var.deploy_repo_url
+              type     = "git"
+              name     = "bizquery-platform-deployment"
+              username = "x-access-token"
+              password = var.deploy_repo_pat
+            }
+          },
+          (var.deploy_repo_pat == "" || var.website_deploy_repo_url == "") ? {} : {
+            bizquery-website-deployment = {
+              url      = var.website_deploy_repo_url
+              type     = "git"
+              name     = "bizquery-website-deployment"
+              username = "x-access-token"
+              password = var.deploy_repo_pat
+            }
           }
-        }
+        )
       }
       server = {
         service = {

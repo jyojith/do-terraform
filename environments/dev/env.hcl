@@ -25,11 +25,15 @@ locals {
     app = {
       ttl = 300
     }
+    www = {
+      ttl = 300
+    }
   }
   repo_url       = "https://github.com/jyojith/do-terraform"
   branch         = "main"
   manifests_path = "k8s/apps/dev"
   app_namespace  = "bizquery-dev"
-  # Private deployment repo Argo CD reads (credential = TF_VAR_deploy_repo_pat)
-  deploy_repo_url = "https://github.com/jyojith/bizquery-platform-deployment.git"
+  # Private deployment repos Argo CD reads (credential = TF_VAR_deploy_repo_pat, scoped to both)
+  deploy_repo_url         = "https://github.com/jyojith/bizquery-platform-deployment.git"
+  website_deploy_repo_url = "https://github.com/jyojith/bizquery-website-deployment.git"
 }

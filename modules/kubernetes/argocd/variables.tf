@@ -47,6 +47,12 @@ variable "deploy_repo_url" {
   default     = ""
 }
 
+variable "website_deploy_repo_url" {
+  description = "Git URL of the website's private deployment repo Argo CD must read"
+  type        = string
+  default     = ""
+}
+
 variable "deploy_repo_pat" {
   description = "GitHub PAT with read access to the deployment repo (Argo CD repository credential)"
   type        = string

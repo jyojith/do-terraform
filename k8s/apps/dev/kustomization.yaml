@@ -1,5 +1,5 @@
 resources:
-  - loading-page/
-  # bizquery manifests now live in the bizquery-platform-deployment repo. This Application CR points
-  # Argo CD at that repo; the app-of-apps deploys the CR, which then syncs the app.
+  # Each app's manifests live in its own deployment repo; these Application CRs point Argo CD at them.
+  # The app-of-apps deploys the CRs, which then sync each app. (loading-page replaced by the website.)
   - bizquery-app.yaml
+  - website-app.yaml

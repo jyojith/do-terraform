@@ -23,6 +23,7 @@ module "argocd" {
   argocd_namespace           = "argocd"
   argocd_admin_password_hash = var.argocd_admin_password_hash
   deploy_repo_url            = var.deploy_repo_url
+  website_deploy_repo_url    = var.website_deploy_repo_url
   deploy_repo_pat            = var.deploy_repo_pat
 }
 EOF
@@ -67,6 +68,7 @@ inputs = {
   ghcr_username              = get_env("TF_VAR_ghcr_username", "")
   ghcr_pat                   = get_env("TF_VAR_ghcr_pat", "")
   deploy_repo_url            = local.env.locals.deploy_repo_url
+  website_deploy_repo_url    = local.env.locals.website_deploy_repo_url
   deploy_repo_pat            = get_env("TF_VAR_deploy_repo_pat", "")
   k8s_kubeconfig_yaml        = length(trimspace(local.k8s_kubeconfig_yaml)) > 0 ? local.k8s_kubeconfig_yaml : (length(trimspace(try(dependency.doks.outputs.kubeconfig, ""))) > 0 ? dependency.doks.outputs.kubeconfig : file(local.mock_kubeconfig_file))
 }
