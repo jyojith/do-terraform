@@ -15,6 +15,14 @@ resource "digitalocean_kubernetes_cluster" "main" {
     size       = var.node_size
     node_count = var.node_count
   }
+
+  # Guard against an accidental `terragrunt run-all destroy` (or a config change that would force
+  # cluster recreation) taking the cluster — and the Postgres + raw-files DO block volumes attached
+  # to it — down with it. To intentionally tear the cluster down, set this to false / remove the
+  # block first, then destroy.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "kubeconfig" {
