@@ -57,6 +57,27 @@ resource "kubernetes_secret_v1" "bizquery" {
   type = "Opaque"
 }
 
+# Image pull secret so the cluster can pull the private GHCR image (the app's imagePullSecrets:
+# ghcr-pull references this by name). var.ghcr_pat is a GitHub PAT with read:packages.
+resource "kubernetes_secret_v1" "ghcr_pull" {
+  metadata {
+    name      = "ghcr-pull"
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "ghcr.io" = {
+          username = var.ghcr_username
+          password = var.ghcr_pat
+          auth     = base64encode("${var.ghcr_username}:${var.ghcr_pat}")
+        }
+      }
+    })
+  }
+}
+
 # Retrieve with: terragrunt --terragrunt-working-dir environments/dev/argocd output -raw <name>
 output "bizquery_admin_password" {
   value     = random_password.admin.result

@@ -45,3 +45,16 @@ variable "do_model_access_key" {
   type        = string
   sensitive   = true
 }
+
+variable "ghcr_username" {
+  description = "GitHub username for the GHCR image pull secret"
+  type        = string
+  default     = ""
+}
+
+variable "ghcr_pat" {
+  description = "GitHub PAT with read:packages — for the cluster to pull the private bizquery image"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

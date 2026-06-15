@@ -1,0 +1,26 @@
+# Argo CD Application for bizquery — its manifests now live in the dedicated deployment repo
+# (bizquery-platform-deployment), which CI bumps on each build. This CR is deployed by the
+# app-of-apps (it's listed in this directory's kustomization), so Argo CD self-manages it.
+#
+# NOTE: that repo is private — Argo CD needs read access to it (a repository credential, or make the
+# repo public). See do-terraform README / the argocd stack.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bizquery
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jyojith/bizquery-platform-deployment.git
+    targetRevision: main
+    path: dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bizquery
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

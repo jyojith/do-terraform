@@ -1,6 +1,5 @@
 resources:
   - loading-page/
-  # Deployed directly by the app-of-apps (same pattern as loading-page). Each manifest carries its own
-  # metadata.namespace (bizquery), so resources land there regardless of the app-of-apps destination.
-  # This supersedes the bizquery entry in argocd-applicationset.yaml, which is not applied anywhere.
-  - bizquery/
+  # bizquery manifests now live in the bizquery-platform-deployment repo. This Application CR points
+  # Argo CD at that repo; the app-of-apps deploys the CR, which then syncs the app.
+  - bizquery-app.yaml
