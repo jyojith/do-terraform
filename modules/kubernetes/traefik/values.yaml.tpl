@@ -11,6 +11,11 @@ providers:
   kubernetesIngress:
     allowExternalNameServices: true
     namespaces: []
+    # Publish the Traefik LoadBalancer endpoint back onto every Ingress's status.loadBalancer.
+    # Without this, Ingress status stays empty and tools that read it (e.g. ArgoCD health) report
+    # the app as perpetually "Progressing" even though routing works. <namespace>/<service>.
+    ingressEndpoint:
+      publishedService: "traefik/traefik"
 
 ports:
   web:
