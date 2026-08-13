@@ -46,6 +46,12 @@ variable "do_model_access_key" {
   sensitive   = true
 }
 
+variable "db_url" {
+  description = "BQP_DATABASE_URL — the app's Postgres connection string (DO Managed Database, database stack output)"
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_username" {
   description = "GitHub username for the GHCR image pull secret"
   type        = string

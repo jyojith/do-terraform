@@ -13,3 +13,11 @@ output "cluster_ca_certificate" {
 output "cluster_urn" {
   value = digitalocean_kubernetes_cluster.main.urn
 }
+
+output "cluster_id" {
+  value = digitalocean_kubernetes_cluster.main.id
+}
+
+output "vpc_uuid" {
+  value = digitalocean_kubernetes_cluster.main.vpc_uuid
+}

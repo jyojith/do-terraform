@@ -22,6 +22,14 @@ output "cluster_urn" {
   value = module.cluster.cluster_urn
 }
 
+output "cluster_id" {
+  value = module.cluster.cluster_id
+}
+
+output "vpc_uuid" {
+  value = module.cluster.vpc_uuid
+}
+
 output "domain_urn" {
   value = data.digitalocean_domain.existing.urn
 }

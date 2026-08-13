@@ -38,11 +38,20 @@ dependency "doks" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
-# Ordering: Argo CD after Traefik (ACME) and DNS exist.
+dependency "database" {
+  config_path = "../database"
+  mock_outputs = {
+    database_url = "postgresql+psycopg://mock:mock@mock:5432/mock?sslmode=require"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+}
+
+# Ordering: Argo CD after Traefik (ACME), DNS, and the database exist.
 dependencies {
   paths = [
     "../traefik",
     "../dns",
+    "../database",
   ]
 }
 
@@ -65,6 +74,7 @@ inputs = {
   app_namespace              = local.env.locals.app_namespace
   argocd_admin_password_hash = get_env("TF_VAR_argocd_admin_password_hash", "")
   do_model_access_key        = get_env("TF_VAR_do_model_access_key", "")
+  db_url                     = dependency.database.outputs.database_url
   ghcr_username              = get_env("TF_VAR_ghcr_username", "")
   ghcr_pat                   = get_env("TF_VAR_ghcr_pat", "")
   deploy_repo_url            = local.env.locals.deploy_repo_url

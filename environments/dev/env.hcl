@@ -8,8 +8,9 @@ locals {
   name         = "bizquery-k8s-dev"
   node_count   = 1
   node_size    = "s-2vcpu-4gb" # bumped from s-1vcpu-2gb: 1 node shares ArgoCD+Traefik+system + api/worker/postgres
-  # Leave empty to use the latest available DigitalOcean Kubernetes version.
-  k8s_version = ""
+  # Pinned (was "" = always-latest, which silently drifts the live cluster's k8s version on any
+  # unrelated apply — bump deliberately, not as a side effect of some other change).
+  k8s_version = "1.36.3-do.1"
   domain_name = "bizquery.dev"
   email       = "admin@unisphere.wiki"
   dns_records = {
