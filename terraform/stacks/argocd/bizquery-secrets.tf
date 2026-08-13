@@ -15,15 +15,6 @@ resource "kubernetes_namespace_v1" "app" {
 }
 
 # Generated once and kept in Terraform state (keep state private, like do_token). Rotate by tainting.
-# STILL NEEDED even though the app now reads BQP_DATABASE_URL from var.db_url (DO Managed Database):
-# the old in-cluster StatefulSet (bizquery-platform-deployment/dev/postgres.yaml) is kept running as
-# a fallback until the migration is confirmed and it's deliberately decommissioned — if that pod ever
-# reschedules, it still needs POSTGRES_PASSWORD to start. Remove this once postgres.yaml is dropped.
-resource "random_password" "db" {
-  length  = 24
-  special = false
-}
-
 resource "random_password" "session" {
   length  = 48
   special = false
@@ -50,9 +41,6 @@ resource "kubernetes_secret_v1" "bizquery" {
     # DO Managed Database — see terraform/stacks/database. Connection string already includes the
     # generated bqp user password + sslmode=require (DO managed PG mandates TLS).
     BQP_DATABASE_URL = var.db_url
-    # Only consumed by the old in-cluster StatefulSet, kept around as a fallback — see the
-    # random_password.db comment above. Not part of BQP_DATABASE_URL anymore.
-    POSTGRES_PASSWORD = random_password.db.result
     # DigitalOcean Gradient AI model access key — same key drives chat + embeddings
     BQP_CHAT_API_KEY      = trimspace(var.do_model_access_key)
     OPENAI_API_KEY        = trimspace(var.do_model_access_key)
